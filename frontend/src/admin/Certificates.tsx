@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Award, Download, ShieldOff, Plus } from "lucide-react";
-import { getCertificates, issueCertificate, revokeCertificate, getAllCourses, CertificateRecord } from "../services/api";
+import { fetchAdminCertificates, createAdminCertificate, revokeAdminCertificate, getAllCourses, CertificateRecord } from "../services/api";
 import logo from "../assets/images/bci-logo.png";
 
 function downloadCertificate(cert: CertificateRecord) {
@@ -43,27 +43,49 @@ function downloadCertificate(cert: CertificateRecord) {
 }
 
 export default function Certificates() {
-  const [certs, setCerts] = useState<CertificateRecord[]>(getCertificates());
+  const [certs, setCerts] = useState<CertificateRecord[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
   const courses = getAllCourses();
   const [form, setForm] = useState({ studentName: "", courseName: courses[0]?.title || "", completionDate: "" });
 
-  const handleGenerate = (e: React.FormEvent) => {
+  useEffect(() => {
+    let active = true;
+    fetchAdminCertificates()
+      .then((records) => { if (active) setCerts(records); })
+      .catch((err) => { if (active) setError(err instanceof Error ? err.message : "Unable to load certificates."); })
+      .finally(() => { if (active) setLoading(false); });
+    return () => { active = false; };
+  }, []);
+
+  const handleGenerate = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.studentName || !form.courseName || !form.completionDate) return;
-    issueCertificate(form.studentName, form.courseName, form.completionDate);
-    setCerts(getCertificates());
-    setForm({ studentName: "", courseName: courses[0]?.title || "", completionDate: "" });
+    try {
+      const cert = await createAdminCertificate(form.studentName, form.courseName, form.completionDate);
+      setCerts((current) => [cert, ...current]);
+      setForm({ studentName: "", courseName: courses[0]?.title || "", completionDate: "" });
+      setError("");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Unable to issue certificate.");
+    }
   };
 
-  const handleRevoke = (id: string) => {
+  const handleRevoke = async (id: string) => {
     if (!confirm("Revoke this certificate? It will no longer verify as valid.")) return;
-    setCerts(revokeCertificate(id));
+    try {
+      setCerts(await revokeAdminCertificate(id));
+      setError("");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Unable to revoke certificate.");
+    }
   };
 
   return (
     <div>
       <h1 className="mb-1 text-2xl font-bold">Certificates</h1>
       <p className="mb-6 text-sm text-ink/50">Generate, download, and manage completion certificates.</p>
+      {error && <p role="alert" className="mb-4 text-sm text-red-600">{error}</p>}
 
       <form onSubmit={handleGenerate} className="glass-card mb-8 grid gap-4 p-6 md:grid-cols-3">
         <div>
@@ -104,7 +126,9 @@ export default function Certificates() {
       </form>
 
       <div className="glass-card overflow-x-auto p-6">
-        {certs.length === 0 ? (
+        {loading ? (
+          <p className="text-sm text-ink/50">Loading certificates...</p>
+        ) : certs.length === 0 ? (
           <p className="text-sm text-ink/50">No certificates issued yet.</p>
         ) : (
           <table className="w-full min-w-[700px] text-left text-sm">
@@ -119,7 +143,7 @@ export default function Certificates() {
               </tr>
             </thead>
             <tbody>
-              {certs.slice().reverse().map((c) => (
+              {certs.map((c) => (
                 <tr key={c.certificateId} className="border-b border-white/5">
                   <td className="py-2 font-mono text-xs text-brand-700">{c.certificateId}</td>
                   <td className="py-2">{c.studentName}</td>

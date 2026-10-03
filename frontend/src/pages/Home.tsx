@@ -1,13 +1,27 @@
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { ArrowRight, CheckCircle2 } from "lucide-react";
 import Hero from "../components/Hero";
 import CourseCard from "../components/CourseCard";
-import CertificateSection from "../components/CertificateSection";
-import { getPublishedCourses } from "../services/api";
+import ReferralBanner from "../components/ReferralBanner";
+import OurServices from "../components/OurServices";
+import OurStartups from "../components/OurStartups";
+import { fetchPublishedCourses, AdminCourse } from "../services/api";
 import { company } from "../data/company";
 
 export default function Home() {
-  const courses = getPublishedCourses();
+  const [courses, setCourses] = useState<AdminCourse[]>([]);
+
+  useEffect(() => {
+    let isMounted = true;
+    fetchPublishedCourses().then((data) => {
+      if (isMounted) setCourses(data);
+    });
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
   return (
     <div>
       <Hero />
@@ -26,12 +40,21 @@ export default function Home() {
           </span>
           <h2 className="text-3xl font-bold md:text-4xl">Choose Your AI Learning Path</h2>
         </div>
-        <div className="grid gap-8 md:grid-cols-3">
+        <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
           {courses.map((course, i) => (
             <CourseCard key={course.slug} course={course} index={i} />
           ))}
         </div>
       </section>
+
+      {/* Referral Offer Banner (Placed Directly Under AI Courses) */}
+      <ReferralBanner />
+
+      {/* Our Services Section */}
+      <OurServices />
+
+      {/* Our Startups Section */}
+      <OurStartups />
 
       {/* Why BCI */}
       <section className="bg-white py-20">
@@ -53,8 +76,6 @@ export default function Home() {
           </div>
         </div>
       </section>
-
-      <CertificateSection />
 
       {/* CTA */}
       <section className="section-container py-20 text-center">

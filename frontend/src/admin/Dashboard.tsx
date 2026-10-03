@@ -1,23 +1,43 @@
+import { useEffect, useState } from "react";
 import { Users, Inbox, ClipboardList, BookOpen } from "lucide-react";
-import { getStoredRegistrations, getStoredEnquiries, getAllCourses, getStudents } from "../services/api";
+import { fetchRegistrations, fetchEnquiries, fetchAdminCourses, fetchAdminStudents } from "../services/api";
 
 export default function Dashboard() {
-  const registrations = getStoredRegistrations();
-  const enquiries = getStoredEnquiries();
-  const courses = getAllCourses();
-  const students = getStudents();
+  const [registrations, setRegistrations] = useState<any[]>([]);
+  const [enquiries, setEnquiries] = useState<any[]>([]);
+  const [courseCount, setCourseCount] = useState(0);
+  const [studentCount, setStudentCount] = useState(0);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    let active = true;
+    Promise.all([fetchRegistrations(), fetchEnquiries(), fetchAdminCourses(), fetchAdminStudents()])
+      .then(([registrationRecords, enquiryRecords, courses, students]) => {
+        if (!active) return;
+        setRegistrations(registrationRecords);
+        setEnquiries(enquiryRecords);
+        setCourseCount(courses.filter((course) => course.status === "published").length);
+        setStudentCount(students.length);
+      })
+      .catch((err) => setError(err instanceof Error ? err.message : "Unable to load the admin dashboard."))
+      .finally(() => { if (active) setLoading(false); });
+    return () => { active = false; };
+  }, []);
 
   const stats = [
-    { label: "Total Students", value: students.length, icon: Users },
+    { label: "Total Students", value: studentCount, icon: Users },
     { label: "New Enquiries", value: enquiries.filter((e: any) => e.status === "New").length, icon: Inbox },
     { label: "Total Registrations", value: registrations.length, icon: ClipboardList },
-    { label: "Published Courses", value: courses.filter((c) => c.status === "published").length, icon: BookOpen },
+    { label: "Published Courses", value: courseCount, icon: BookOpen },
   ];
 
   return (
     <div>
       <h1 className="mb-1 text-2xl font-bold">BCI Admin Dashboard</h1>
       <p className="mb-8 text-sm text-ink/50">Overview of registrations, enquiries, and courses.</p>
+      {error && <p role="alert" className="mb-4 text-sm text-red-600">{error}</p>}
+      {loading && <p className="mb-4 text-sm text-ink/50">Loading dashboard...</p>}
 
       <div className="mb-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
         {stats.map((s) => {
@@ -34,7 +54,9 @@ export default function Dashboard() {
 
       <div className="glass-card p-6">
         <h2 className="mb-4 font-semibold">Recent Registrations</h2>
-        {registrations.length === 0 ? (
+        {loading ? (
+          <p className="text-sm text-ink/50">Loading registrations...</p>
+        ) : registrations.length === 0 ? (
           <p className="text-sm text-ink/50">No registrations yet.</p>
         ) : (
           <table className="w-full text-left text-sm">
@@ -46,7 +68,7 @@ export default function Dashboard() {
               </tr>
             </thead>
             <tbody>
-              {registrations.slice(-5).reverse().map((r: any) => (
+              {registrations.slice(0, 5).map((r: any) => (
                 <tr key={r.id} className="border-b border-white/5">
                   <td className="py-2">{r.fullName}</td>
                   <td className="py-2">{r.course}</td>

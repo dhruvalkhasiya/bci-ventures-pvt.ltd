@@ -17,11 +17,12 @@ export default function CertificateSection() {
           <ShieldCheck size={18} /> Verify a Certificate
         </Link>
       </div>
-      <div className="glass-card mx-auto flex w-full max-w-md flex-col items-center gap-3 border-2 border-gold-500/40 p-10 text-center">
-        <Award size={48} className="text-gold-500" />
-        <p className="text-xs uppercase tracking-widest text-ink/50">Certificate of Completion</p>
-        <h3 className="font-display text-xl font-bold">Billionaire Concept Ingenuity</h3>
-        <p className="text-sm text-ink/60">This certifies that the bearer has successfully completed the program</p>
+      <div className="mx-auto w-full max-w-xl overflow-hidden border-2 border-gold-500/40 bg-white shadow-[0_12px_30px_rgba(13,61,109,0.12)]">
+        <img
+          src="/WhatsApp%20Image%202026-09-27%20at%205.05.31%20PM.jpeg"
+          alt="BCI Certificate of Completion"
+          className="h-auto w-full object-contain"
+        />
       </div>
     </section>
   );

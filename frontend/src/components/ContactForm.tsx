@@ -1,11 +1,21 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { CheckCircle2, Loader2 } from "lucide-react";
-import { submitEnquiry, getPublishedCourses } from "../services/api";
+import { submitEnquiry, fetchPublishedCourses, AdminCourse } from "../services/api";
 
 export default function ContactForm() {
-  const courses = getPublishedCourses();
+  const [courses, setCourses] = useState<AdminCourse[]>([]);
   const [form, setForm] = useState({ name: "", phone: "", email: "", course: "", message: "" });
   const [status, setStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
+
+  useEffect(() => {
+    let isMounted = true;
+    fetchPublishedCourses().then((data) => {
+      if (isMounted) setCourses(data);
+    });
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     setForm({ ...form, [e.target.name]: e.target.value });

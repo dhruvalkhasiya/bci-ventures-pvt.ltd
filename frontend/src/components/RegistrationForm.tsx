@@ -1,12 +1,23 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { CheckCircle2, Loader2 } from "lucide-react";
-import { submitRegistration, getPublishedCourses } from "../services/api";
+import { submitRegistration, fetchPublishedCourses, AdminCourse } from "../services/api";
+import { getWhatsAppUrl } from "../utils/whatsapp";
 
 export default function RegistrationForm() {
-  const courses = getPublishedCourses();
+  const [courses, setCourses] = useState<AdminCourse[]>([]);
   const [params] = useSearchParams();
   const preselected = params.get("course") || "";
+
+  useEffect(() => {
+    let isMounted = true;
+    fetchPublishedCourses().then((data) => {
+      if (isMounted) setCourses(data);
+    });
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   const [form, setForm] = useState({
     fullName: "",
@@ -16,6 +27,7 @@ export default function RegistrationForm() {
     city: "",
     profession: "",
     preferredBatch: "",
+    startDate: new Date().toISOString().split("T")[0],
     message: "",
   });
   const [status, setStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
@@ -45,8 +57,13 @@ export default function RegistrationForm() {
         <h3 className="text-2xl font-semibold">Registration submitted successfully!</h3>
         <p className="text-ink/60">Our team will reach out to confirm your batch and payment details.</p>
         <div className="mt-4 flex flex-wrap justify-center gap-4">
-          <a href="https://wa.me/919979206007" target="_blank" rel="noopener noreferrer" className="btn-primary">
-            Contact on WhatsApp
+          <a
+            href={getWhatsAppUrl({ type: "registration", studentName: form.fullName, courseName: form.course })}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="btn-primary"
+          >
+            Connect on WhatsApp (+91 99792 06007)
           </a>
           <a href="/courses" className="btn-secondary">Return to Courses</a>
         </div>
@@ -78,6 +95,10 @@ export default function RegistrationForm() {
         </select>
       </div>
       <div>
+        <label className="mb-1 block text-sm text-ink/70">Preferred Start Date</label>
+        <input required type="date" name="startDate" value={form.startDate} onChange={handleChange} className="input-field" />
+      </div>
+      <div>
         <label className="mb-1 block text-sm text-ink/70">City</label>
         <input required name="city" value={form.city} onChange={handleChange} className="input-field" placeholder="Your city" />
       </div>
@@ -87,7 +108,11 @@ export default function RegistrationForm() {
       </div>
       <div>
         <label className="mb-1 block text-sm text-ink/70">Preferred Batch</label>
-        <input name="preferredBatch" value={form.preferredBatch} onChange={handleChange} className="input-field" placeholder="e.g. Morning / Evening" />
+        <select required name="preferredBatch" value={form.preferredBatch} onChange={handleChange} className="input-field">
+          <option value="">Select Preferred Batch</option>
+          <option value="Daily Batch (Mon - Fri)">Daily Batch (Mon - Fri)</option>
+          <option value="Weekend Batch (Sat - Sun)">Weekend Batch (Sat - Sun)</option>
+        </select>
       </div>
       <div className="md:col-span-2">
         <label className="mb-1 block text-sm text-ink/70">Message</label>

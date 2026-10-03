@@ -1,24 +1,37 @@
-import { useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { Search, X } from "lucide-react";
-import { getStudents, updateStudentStatus, STUDENT_STATUSES, getAllCourses, StudentRecord } from "../services/api";
+import { fetchAdminStudents, saveStudentStatus, STUDENT_STATUSES, getAllCourses, StudentRecord } from "../services/api";
 
 export default function Students() {
   const [search, setSearch] = useState("");
   const [courseFilter, setCourseFilter] = useState("");
+  const [students, setStudents] = useState<StudentRecord[]>([]);
   const [viewing, setViewing] = useState<StudentRecord | null>(null);
-  const [, forceRefresh] = useState(0);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
   const courses = getAllCourses();
-  const students = useMemo(
-    () => getStudents({ search, course: courseFilter || undefined }),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [search, courseFilter]
-  );
 
-  const handleStatusChange = (email: string, status: string) => {
-    updateStudentStatus(email, status);
-    forceRefresh((n) => n + 1);
-    if (viewing?.email === email) setViewing({ ...viewing, status });
+  useEffect(() => {
+    let active = true;
+    setLoading(true);
+    setError("");
+    fetchAdminStudents({ search, course: courseFilter || undefined })
+      .then((records) => { if (active) setStudents(records); })
+      .catch((err) => { if (active) setError(err instanceof Error ? err.message : "Unable to load students."); })
+      .finally(() => { if (active) setLoading(false); });
+    return () => { active = false; };
+  }, [search, courseFilter]);
+
+  const handleStatusChange = async (email: string, status: string) => {
+    try {
+      await saveStudentStatus(email, status);
+      setStudents((current) => current.map((student) => student.email === email ? { ...student, status } : student));
+      if (viewing?.email === email) setViewing({ ...viewing, status });
+      setError("");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Unable to update student status.");
+    }
   };
 
   const courseName = (slug: string) => courses.find((c) => c.slug === slug)?.title || slug;
@@ -27,6 +40,7 @@ export default function Students() {
     <div>
       <h1 className="mb-1 text-2xl font-bold">Students</h1>
       <p className="mb-6 text-sm text-ink/50">Everyone who has registered for a course, grouped by email.</p>
+      {error && <p role="alert" className="mb-4 text-sm text-red-600">{error}</p>}
 
       <div className="mb-6 flex flex-col gap-3 sm:flex-row">
         <div className="relative flex-1">
@@ -47,7 +61,9 @@ export default function Students() {
       </div>
 
       <div className="glass-card overflow-x-auto p-6">
-        {students.length === 0 ? (
+        {loading ? (
+          <p className="text-sm text-ink/50">Loading students...</p>
+        ) : students.length === 0 ? (
           <p className="text-sm text-ink/50">No students found. They'll appear here once someone registers for a course.</p>
         ) : (
           <table className="w-full min-w-[700px] text-left text-sm">

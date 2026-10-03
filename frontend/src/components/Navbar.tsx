@@ -2,12 +2,14 @@ import { useEffect, useState } from "react";
 import { Link, NavLink } from "react-router-dom";
 import { Menu, X } from "lucide-react";
 import logo from "../assets/images/bci-logo.png";
+import { LanguagePicker } from "./LanguageSelector";
 
 const navLinks = [
   { label: "Home", to: "/" },
   { label: "About", to: "/about" },
   { label: "Courses", to: "/courses" },
-  { label: "Certification", to: "/certification" },
+  { label: "Services", to: "/services" },
+  { label: "Startups", to: "/startups" },
   { label: "Contact", to: "/contact" },
 ];
 
@@ -34,27 +36,30 @@ export default function Navbar() {
           </span>
         </Link>
 
-        <div className="hidden items-center gap-8 md:flex">
-          {navLinks.map((link) => (
-            <NavLink
-              key={link.to}
-              to={link.to}
-              className={({ isActive }) =>
-                `text-sm font-medium transition-colors hover:text-brand-700 ${isActive ? "text-brand-700" : "text-ink/80"
-                }`
-              }
-            >
-              {link.label}
-            </NavLink>
-          ))}
-          <Link to="/register" className="btn-primary !py-2 !px-5 text-sm">
-            Register Now
-          </Link>
-        </div>
+        <div className="flex items-center gap-3 md:gap-8">
+          <div className="hidden items-center gap-8 md:flex">
+            {navLinks.map((link) => (
+              <NavLink
+                key={link.to}
+                to={link.to}
+                className={({ isActive }) =>
+                  `text-sm font-medium transition-colors hover:text-brand-700 ${isActive ? "text-brand-700" : "text-ink/80"
+                  }`
+                }
+              >
+                {link.label}
+              </NavLink>
+            ))}
+            <Link to="/register" className="btn-primary !py-2 !px-5 text-sm">
+              Register Now
+            </Link>
+          </div>
+          <LanguagePicker />
 
-        <button className="md:hidden" onClick={() => setOpen(!open)} aria-label="Toggle menu">
-          {open ? <X /> : <Menu />}
-        </button>
+          <button className="md:hidden" onClick={() => setOpen(!open)} aria-label="Toggle menu">
+            {open ? <X /> : <Menu />}
+          </button>
+        </div>
       </nav>
 
       {open && (

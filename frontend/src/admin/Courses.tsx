@@ -1,13 +1,10 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Plus, Pencil, Trash2, Eye, EyeOff, X, Save } from "lucide-react";
 import {
-  getAllCourses,
-  createCourse,
-  updateCourse,
-  deleteCourse,
-  togglePublish,
-  addModule,
-  removeModule,
+  fetchAdminCourses,
+  createAdminCourse,
+  updateAdminCourse,
+  deleteAdminCourse,
   AdminCourse,
   CoursePayload,
 } from "../services/api";
@@ -23,16 +20,33 @@ const emptyForm: CoursePayload = {
   coding: "No Coding Required",
   certificate: "Certificate of Completion",
   ctaLabel: "View Course",
+  status: "published",
 };
 
 export default function AdminCourses() {
-  const [courses, setCourses] = useState<AdminCourse[]>(getAllCourses());
+  const [courses, setCourses] = useState<AdminCourse[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
   const [mode, setMode] = useState<"list" | "new" | "edit">("list");
   const [editingSlug, setEditingSlug] = useState<string | null>(null);
   const [form, setForm] = useState<CoursePayload>(emptyForm);
   const [moduleDraft, setModuleDraft] = useState({ title: "", description: "" });
 
-  const refresh = () => setCourses(getAllCourses());
+  const refresh = async () => {
+    setLoading(true);
+    setError("");
+    try {
+      setCourses(await fetchAdminCourses());
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Unable to load courses.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    void refresh();
+  }, []);
 
   const startCreate = () => {
     setForm(emptyForm);
@@ -52,6 +66,7 @@ export default function AdminCourses() {
       coding: course.coding,
       certificate: course.certificate,
       ctaLabel: course.ctaLabel,
+      status: course.status || "published",
     });
     setEditingSlug(course.slug);
     setMode("edit");
@@ -62,43 +77,70 @@ export default function AdminCourses() {
     setEditingSlug(null);
   };
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setForm((f) => ({ ...f, [name]: name === "price" ? (value === "" ? null : Number(value)) : value }));
   };
 
-  const handleSave = (e: React.FormEvent) => {
+  const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (mode === "new") {
-      createCourse(form);
-    } else if (mode === "edit" && editingSlug) {
-      updateCourse(editingSlug, form);
+    setError("");
+    try {
+      if (mode === "new") {
+        await createAdminCourse(form);
+      } else if (mode === "edit" && editingSlug) {
+        await updateAdminCourse(editingSlug, form);
+      }
+      await refresh();
+      cancel();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Unable to save the course.");
     }
-    refresh();
-    cancel();
   };
 
-  const handleDelete = (slug: string) => {
+  const handleDelete = async (slug: string) => {
     if (!confirm("Delete this course? This cannot be undone.")) return;
-    deleteCourse(slug);
-    refresh();
+    try {
+      await deleteAdminCourse(slug);
+      await refresh();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Unable to delete the course.");
+    }
   };
 
-  const handleTogglePublish = (slug: string) => {
-    togglePublish(slug);
-    refresh();
+  const handleTogglePublish = async (course: AdminCourse) => {
+    try {
+      await updateAdminCourse(course.slug, { status: course.status === "published" ? "draft" : "published" });
+      await refresh();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Unable to update course visibility.");
+    }
   };
 
-  const handleAddModule = (slug: string) => {
+  const handleAddModule = async (slug: string) => {
     if (!moduleDraft.title.trim()) return;
-    addModule(slug, moduleDraft.title, moduleDraft.description);
-    setModuleDraft({ title: "", description: "" });
-    refresh();
+    const course = courses.find((item) => item.slug === slug);
+    if (!course) return;
+    try {
+      await updateAdminCourse(slug, {
+        modules: [...course.modules, { number: (course.modules[course.modules.length - 1]?.number || 0) + 1, ...moduleDraft }],
+      });
+      setModuleDraft({ title: "", description: "" });
+      await refresh();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Unable to add the module.");
+    }
   };
 
-  const handleRemoveModule = (slug: string, moduleNumber: number) => {
-    removeModule(slug, moduleNumber);
-    refresh();
+  const handleRemoveModule = async (slug: string, moduleNumber: number) => {
+    const course = courses.find((item) => item.slug === slug);
+    if (!course) return;
+    try {
+      await updateAdminCourse(slug, { modules: course.modules.filter((module) => module.number !== moduleNumber) });
+      await refresh();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Unable to remove the module.");
+    }
   };
 
   const editingCourse = editingSlug ? courses.find((c) => c.slug === editingSlug) : undefined;
@@ -106,6 +148,7 @@ export default function AdminCourses() {
   if (mode !== "list") {
     return (
       <div>
+        {error && <p role="alert" className="mb-4 text-sm text-red-600">{error}</p>}
         <div className="mb-6 flex items-center justify-between">
           <h1 className="text-2xl font-bold">{mode === "new" ? "Add Course" : `Edit ${editingCourse?.title}`}</h1>
           <button onClick={cancel} className="flex items-center gap-1 text-sm text-ink/60 hover:text-ink">
@@ -150,9 +193,16 @@ export default function AdminCourses() {
             <label className="mb-1 block text-sm text-ink/70">Certificate Label</label>
             <input required name="certificate" value={form.certificate} onChange={handleChange} className="input-field" />
           </div>
-          <div className="md:col-span-2">
+          <div>
             <label className="mb-1 block text-sm text-ink/70">CTA Button Label</label>
             <input required name="ctaLabel" value={form.ctaLabel} onChange={handleChange} className="input-field" />
+          </div>
+          <div>
+            <label className="mb-1 block text-sm text-ink/70">Status / Visibility</label>
+            <select name="status" value={form.status || "published"} onChange={handleChange} className="input-field">
+              <option value="published">Published (Visible on Website)</option>
+              <option value="draft">Draft (Hidden from Website)</option>
+            </select>
           </div>
 
           <button type="submit" className="btn-primary md:col-span-2">
@@ -202,6 +252,7 @@ export default function AdminCourses() {
 
   return (
     <div>
+      {error && <p role="alert" className="mb-4 text-sm text-red-600">{error}</p>}
       <div className="mb-6 flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold">Courses</h1>
@@ -212,8 +263,14 @@ export default function AdminCourses() {
         </button>
       </div>
 
+      {loading ? (
+        <p className="text-sm text-ink/50">Loading courses...</p>
+      ) : courses.length === 0 ? (
+        <p className="text-sm text-ink/50">No courses found.</p>
+      ) : null}
+
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        {courses.map((c) => (
+        {!loading && courses.map((c) => (
           <div key={c.slug} className="glass-card p-6">
             <div className="mb-3 flex items-start justify-between">
               <h3 className="font-semibold">{c.title}</h3>
@@ -231,7 +288,7 @@ export default function AdminCourses() {
               <button onClick={() => startEdit(c)} className="btn-secondary !px-3 !py-1.5 text-xs">
                 <Pencil size={13} /> Edit
               </button>
-              <button onClick={() => handleTogglePublish(c.slug)} className="btn-secondary !px-3 !py-1.5 text-xs">
+              <button onClick={() => void handleTogglePublish(c)} className="btn-secondary !px-3 !py-1.5 text-xs">
                 {c.status === "published" ? <EyeOff size={13} /> : <Eye size={13} />}
                 {c.status === "published" ? "Unpublish" : "Publish"}
               </button>

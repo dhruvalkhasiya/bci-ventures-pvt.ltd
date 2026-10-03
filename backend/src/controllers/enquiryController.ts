@@ -2,10 +2,15 @@ import { Request, Response } from "express";
 import Enquiry from "../models/Enquiry";
 import { success, failure } from "../utils/response";
 
+function serializeEnquiry(enquiry: any) {
+  const record = enquiry.toObject ? enquiry.toObject() : enquiry;
+  return { ...record, id: String(record._id) };
+}
+
 export async function createEnquiry(req: Request, res: Response) {
   try {
     const enquiry = await Enquiry.create(req.body);
-    return success(res, enquiry, "Enquiry submitted successfully!", 201);
+    return success(res, serializeEnquiry(enquiry), "Enquiry submitted successfully!", 201);
   } catch (err: any) {
     return failure(res, err.message, 400);
   }
@@ -17,7 +22,7 @@ export async function getEnquiries(req: Request, res: Response) {
     const filter: Record<string, unknown> = {};
     if (status) filter.status = status;
     const enquiries = await Enquiry.find(filter).sort({ createdAt: -1 });
-    return success(res, enquiries);
+    return success(res, enquiries.map(serializeEnquiry));
   } catch (err: any) {
     return failure(res, err.message, 500);
   }
@@ -25,9 +30,9 @@ export async function getEnquiries(req: Request, res: Response) {
 
 export async function updateEnquiry(req: Request, res: Response) {
   try {
-    const enquiry = await Enquiry.findByIdAndUpdate(req.params.id, req.body, { new: true });
+    const enquiry = await Enquiry.findByIdAndUpdate(req.params.id, { status: req.body.status }, { new: true, runValidators: true });
     if (!enquiry) return failure(res, "Enquiry not found", 404);
-    return success(res, enquiry, "Enquiry updated");
+    return success(res, serializeEnquiry(enquiry), "Enquiry updated");
   } catch (err: any) {
     return failure(res, err.message, 400);
   }

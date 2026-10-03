@@ -9,9 +9,12 @@ export interface IRegistration extends Document {
   courseId: string;
   city: string;
   profession?: string;
+  date?: string;
   preferredBatch?: string;
   message?: string;
   status: RegistrationStatus;
+  studentStatus: "Enrolled" | "Active" | "Completed" | "Dropped";
+  emailPreviewUrl?: string;
   createdAt: Date;
 }
 
@@ -22,9 +25,12 @@ const registrationSchema = new Schema<IRegistration>({
   courseId: { type: String, required: true },
   city: { type: String, required: true },
   profession: { type: String },
+  date: { type: String },
   preferredBatch: { type: String },
   message: { type: String },
   status: { type: String, enum: ["Pending", "Confirmed", "Cancelled"], default: "Pending" },
+  studentStatus: { type: String, enum: ["Enrolled", "Active", "Completed", "Dropped"], default: "Enrolled" },
+  emailPreviewUrl: { type: String },
   createdAt: { type: Date, default: Date.now },
 });
 

@@ -1,19 +1,41 @@
-import { useState } from "react";
-import { getStoredEnquiries, updateEnquiryStatus, ENQUIRY_STATUSES } from "../services/api";
+import { useEffect, useState } from "react";
+import { fetchEnquiries, saveEnquiryStatus, ENQUIRY_STATUSES } from "../services/api";
 
 export default function Enquiries() {
-  const [enquiries, setEnquiries] = useState(getStoredEnquiries());
+  const [enquiries, setEnquiries] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
-  const handleStatusChange = (id: string, status: string) => {
-    const updated = updateEnquiryStatus(id, status);
-    setEnquiries(updated);
+  const refresh = async () => {
+    setLoading(true);
+    setError("");
+    try {
+      setEnquiries(await fetchEnquiries());
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Unable to load enquiries.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => { void refresh(); }, []);
+
+  const handleStatusChange = async (id: string, status: string) => {
+    try {
+      setEnquiries(await saveEnquiryStatus(id, status));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Unable to update enquiry.");
+    }
   };
 
   return (
     <div>
       <h1 className="mb-6 text-2xl font-bold">Enquiries</h1>
+      {error && <p role="alert" className="mb-4 text-sm text-red-600">{error}</p>}
       <div className="glass-card overflow-x-auto p-6">
-        {enquiries.length === 0 ? (
+        {loading ? (
+          <p className="text-sm text-ink/50">Loading enquiries...</p>
+        ) : enquiries.length === 0 ? (
           <p className="text-sm text-ink/50">No enquiries yet. Submit one from the public Contact page to see it here.</p>
         ) : (
           <table className="w-full min-w-[700px] text-left text-sm">

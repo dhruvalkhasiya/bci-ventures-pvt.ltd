@@ -1,6 +1,7 @@
-import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
+import { Link, Navigate, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { LayoutDashboard, Users, Inbox, BookOpen, Award, LogOut } from "lucide-react";
 import logo from "../assets/images/bci-logo.png";
+import { clearAdminSession, hasAdminSession } from "../services/api";
 
 const links = [
   { to: "/admin/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -16,9 +17,13 @@ export default function AdminLayout() {
   const navigate = useNavigate();
 
   const handleLogout = () => {
-    localStorage.removeItem("bci_admin_mock_auth");
+    clearAdminSession();
     navigate("/admin/login");
   };
+
+  if (!hasAdminSession()) {
+    return <Navigate to="/admin/login" replace state={{ from: location.pathname }} />;
+  }
 
   return (
     <div className="flex min-h-screen bg-white">

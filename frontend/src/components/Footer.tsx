@@ -1,11 +1,23 @@
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { Mail, Phone, MapPin } from "lucide-react";
 import logo from "../assets/images/bci-logo.png";
 import { company } from "../data/company";
-import { getPublishedCourses } from "../services/api";
+import { fetchPublishedCourses, AdminCourse } from "../services/api";
 
 export default function Footer() {
-  const courses = getPublishedCourses();
+  const [courses, setCourses] = useState<AdminCourse[]>([]);
+
+  useEffect(() => {
+    let isMounted = true;
+    fetchPublishedCourses().then((data) => {
+      if (isMounted) setCourses(data);
+    });
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
   return (
     <footer className="border-t border-[#E3EAF0] bg-white pt-16 pb-8">
       <div className="section-container grid gap-10 md:grid-cols-4">
@@ -31,9 +43,8 @@ export default function Footer() {
           <h4 className="mb-3 font-semibold text-brand-700">Company</h4>
           <ul className="space-y-2 text-sm text-ink/70">
             <li><Link to="/about" className="hover:text-brand-700">About Us</Link></li>
-            <li><Link to="/certification" className="hover:text-brand-700">Certification</Link></li>
-            <li><Link to="/certificate/verify" className="hover:text-brand-700">Verify Certificate</Link></li>
             <li><Link to="/contact" className="hover:text-brand-700">Contact</Link></li>
+            <li><Link to="/admin" className="font-semibold text-brand-700 hover:text-gold-600">Admin Portal →</Link></li>
           </ul>
         </div>
 
@@ -41,7 +52,10 @@ export default function Footer() {
           <h4 className="mb-3 font-semibold text-brand-700">Contact</h4>
           <ul className="space-y-3 text-sm text-ink/70">
             <li className="flex items-center gap-2"><Mail size={16} className="text-gold-500" /> {company.contact.email}</li>
-            <li className="flex items-center gap-2"><Phone size={16} className="text-gold-500" /> {company.contact.phone}</li>
+            <li className="flex items-center gap-2">
+              <Phone size={16} className="text-gold-500 shrink-0" />
+              <span>{company.contact.phone} / {company.contact.phoneSecondary}</span>
+            </li>
             <li className="flex items-center gap-2"><MapPin size={16} className="text-gold-500" /> {company.contact.address}</li>
           </ul>
         </div>

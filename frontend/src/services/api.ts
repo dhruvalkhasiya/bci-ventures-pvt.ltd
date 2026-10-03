@@ -9,8 +9,56 @@
 
 import { courses as staticCourses, Course } from "../data/courses";
 
-const USE_MOCK = true;
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000/api";
+export const USE_MOCK = import.meta.env.VITE_USE_MOCK === "true";
+const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || "http://localhost:5000/api").replace(/\/$/, "");
+const AUTH_TOKEN_KEY = "bci_admin_token";
+const AUTH_ROLE_KEY = "bci_auth_role";
+
+interface ApiResponse<T> {
+  success: boolean;
+  message?: string;
+  data?: T;
+}
+
+export async function apiRequest<T>(path: string, options: RequestInit = {}): Promise<T> {
+  const headers = new Headers(options.headers);
+  if (options.body && !headers.has("Content-Type")) headers.set("Content-Type", "application/json");
+  const token = localStorage.getItem(AUTH_TOKEN_KEY);
+  if (token) headers.set("Authorization", `Bearer ${token}`);
+
+  const response = await fetch(`${API_BASE_URL}${path}`, { ...options, headers });
+  const result = (await response.json()) as ApiResponse<T>;
+  if (!response.ok || !result.success) {
+    if (response.status === 401) clearAdminSession();
+    throw new Error(result.message || "The request could not be completed.");
+  }
+  return result.data as T;
+}
+
+export async function loginAdmin(email: string, password: string): Promise<void> {
+  if (USE_MOCK) {
+    localStorage.setItem("bci_admin_mock_auth", "true");
+    return;
+  }
+  const result = await apiRequest<{ token: string }>("/auth/login", {
+    method: "POST",
+    body: JSON.stringify({ email, password }),
+  });
+  localStorage.setItem(AUTH_TOKEN_KEY, result.token);
+  localStorage.setItem(AUTH_ROLE_KEY, "admin");
+}
+
+export function hasAdminSession(): boolean {
+  return USE_MOCK
+    ? localStorage.getItem("bci_admin_mock_auth") === "true"
+    : localStorage.getItem(AUTH_ROLE_KEY) === "admin" && Boolean(localStorage.getItem(AUTH_TOKEN_KEY));
+}
+
+export function clearAdminSession(): void {
+  localStorage.removeItem(AUTH_TOKEN_KEY);
+  localStorage.removeItem(AUTH_ROLE_KEY);
+  localStorage.removeItem("bci_admin_mock_auth");
+}
 
 function mockDelay<T>(data: T, ms = 500): Promise<T> {
   return new Promise((resolve) => setTimeout(() => resolve(data), ms));
@@ -56,13 +104,11 @@ export async function submitRegistration(payload: RegistrationPayload) {
     saveLocal("bci_registrations", payload, { status: "Pending" });
     return mockDelay({ success: true, message: "Registration submitted successfully!" });
   }
-  const res = await fetch(`${API_BASE_URL}/registrations`, {
+  await apiRequest("/registrations", {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload),
   });
-  if (!res.ok) throw new Error("Registration failed. Please try again.");
-  return res.json();
+  return { success: true, message: "Registration submitted successfully!" };
 }
 
 export function getStoredRegistrations() {
@@ -74,6 +120,53 @@ export function updateRegistrationStatus(id: string, status: string) {
   const updated = list.map((r: any) => (r.id === id ? { ...r, status } : r));
   writeLocal("bci_registrations", updated);
   return updated;
+}
+
+export async function fetchRegistrations(): Promise<any[]> {
+  return USE_MOCK ? getStoredRegistrations() : apiRequest<any[]>("/registrations");
+}
+
+export async function saveRegistrationStatus(id: string, status: string): Promise<any[]> {
+  if (USE_MOCK) return updateRegistrationStatus(id, status);
+  await apiRequest(`/registrations/${encodeURIComponent(id)}`, {
+    method: "PUT",
+    body: JSON.stringify({ status }),
+  });
+  return fetchRegistrations();
+}
+
+export async function downloadRegistrationWorkbook(): Promise<void> {
+  if (USE_MOCK) {
+    alert("Excel download is active when connected to backend.");
+    return;
+  }
+  const token = localStorage.getItem(AUTH_TOKEN_KEY);
+  const response = await fetch(`${API_BASE_URL}/registrations/export-excel`, {
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+  });
+  if (!response.ok) throw new Error("Failed to download Excel workbook.");
+  const blob = await response.blob();
+  const url = window.URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "dhruaval.xlsx";
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  window.URL.revokeObjectURL(url);
+}
+
+export async function syncRegistrationWorkbook(): Promise<any> {
+  if (USE_MOCK) return { message: "Sync is active in backend mode." };
+  return apiRequest("/registrations/sync-excel", { method: "POST" });
+}
+
+export async function updateEmailSettings(notificationEmail: string, smtpPass?: string): Promise<{ notificationEmail: string; previewUrl: string | null }> {
+  if (USE_MOCK) return { notificationEmail, previewUrl: null };
+  return apiRequest("/registrations/settings/email", {
+    method: "POST",
+    body: JSON.stringify({ notificationEmail, smtpPass }),
+  });
 }
 
 /* ------------------------------------------------------------------ */
@@ -95,13 +188,11 @@ export async function submitEnquiry(payload: EnquiryPayload) {
     saveLocal("bci_enquiries", payload);
     return mockDelay({ success: true, message: "Enquiry submitted successfully!" });
   }
-  const res = await fetch(`${API_BASE_URL}/enquiries`, {
+  await apiRequest("/enquiries", {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload),
   });
-  if (!res.ok) throw new Error("Enquiry failed. Please try again.");
-  return res.json();
+  return { success: true, message: "Enquiry submitted successfully!" };
 }
 
 export function getStoredEnquiries() {
@@ -113,6 +204,19 @@ export function updateEnquiryStatus(id: string, status: string) {
   const updated = list.map((e: any) => (e.id === id ? { ...e, status } : e));
   writeLocal("bci_enquiries", updated);
   return updated;
+}
+
+export async function fetchEnquiries(): Promise<any[]> {
+  return USE_MOCK ? getStoredEnquiries() : apiRequest<any[]>("/enquiries");
+}
+
+export async function saveEnquiryStatus(id: string, status: string): Promise<any[]> {
+  if (USE_MOCK) return updateEnquiryStatus(id, status);
+  await apiRequest(`/enquiries/${encodeURIComponent(id)}`, {
+    method: "PUT",
+    body: JSON.stringify({ status }),
+  });
+  return fetchEnquiries();
 }
 
 /* ------------------------------------------------------------------ */
@@ -172,6 +276,7 @@ export interface CoursePayload {
   coding: string;
   certificate: string;
   ctaLabel: string;
+  status?: "published" | "draft";
 }
 
 export function createCourse(payload: CoursePayload): AdminCourse {
@@ -183,7 +288,7 @@ export function createCourse(payload: CoursePayload): AdminCourse {
     shortTitle: payload.title,
     tag: String(all.length + 1).padStart(2, "0"),
     modules: [],
-    status: "draft",
+    status: payload.status || "published",
   };
   writeLocal(COURSES_KEY, [...all, newCourse]);
   return newCourse;
@@ -227,6 +332,72 @@ export function removeModule(slug: string, moduleNumber: number) {
   if (!course) return;
   const modules = course.modules.filter((m) => m.number !== moduleNumber);
   return updateCourse(slug, { modules });
+}
+
+export async function fetchPublishedCourses(): Promise<AdminCourse[]> {
+  if (USE_MOCK) return getPublishedCourses();
+  try {
+    const apiCourses = await apiRequest<AdminCourse[]>("/courses");
+    if (Array.isArray(apiCourses) && apiCourses.length > 0) {
+      writeLocal(COURSES_KEY, apiCourses);
+      return apiCourses.filter((c) => c.status === "published");
+    }
+    return getPublishedCourses();
+  } catch (err) {
+    console.warn("Using fallback stored courses:", err);
+    return getPublishedCourses();
+  }
+}
+
+export async function fetchCourseBySlug(slug: string): Promise<AdminCourse | undefined> {
+  if (USE_MOCK) return getCourseBySlugAdmin(slug);
+  try {
+    const apiCourse = await apiRequest<AdminCourse>(`/courses/${encodeURIComponent(slug)}`);
+    return apiCourse || getCourseBySlugAdmin(slug);
+  } catch (err) {
+    console.warn(`Using fallback for course ${slug}:`, err);
+    return getCourseBySlugAdmin(slug);
+  }
+}
+
+export async function fetchAdminCourses(): Promise<AdminCourse[]> {
+  if (USE_MOCK) return getAllCourses();
+  try {
+    const apiCourses = await apiRequest<AdminCourse[]>("/courses/admin");
+    if (Array.isArray(apiCourses) && apiCourses.length > 0) {
+      writeLocal(COURSES_KEY, apiCourses);
+      return apiCourses;
+    }
+    return getAllCourses();
+  } catch (err) {
+    console.warn("Using fallback stored courses:", err);
+    return getAllCourses();
+  }
+}
+
+export async function createAdminCourse(payload: CoursePayload): Promise<AdminCourse> {
+  // Always persist local copy for recovery
+  createCourse(payload);
+  if (USE_MOCK) return getCourseBySlugAdmin(slugify(payload.title))!;
+  return apiRequest<AdminCourse>("/courses", {
+    method: "POST",
+    body: JSON.stringify({ ...payload, shortTitle: payload.title, status: payload.status || "published" }),
+  });
+}
+
+export async function updateAdminCourse(slug: string, updates: Partial<AdminCourse>): Promise<AdminCourse | undefined> {
+  updateCourse(slug, updates);
+  if (USE_MOCK) return getCourseBySlugAdmin(slug);
+  return apiRequest<AdminCourse>(`/courses/${encodeURIComponent(slug)}`, {
+    method: "PUT",
+    body: JSON.stringify(updates),
+  });
+}
+
+export async function deleteAdminCourse(slug: string): Promise<void> {
+  deleteCourse(slug);
+  if (USE_MOCK) return;
+  await apiRequest(`/courses/${encodeURIComponent(slug)}`, { method: "DELETE" });
 }
 
 /* ------------------------------------------------------------------ */
@@ -293,6 +464,26 @@ export function updateStudentStatus(email: string, status: string) {
   writeLocal(STUDENT_STATUS_KEY, overrides);
 }
 
+export async function fetchAdminStudents(filters: { search?: string; course?: string } = {}): Promise<StudentRecord[]> {
+  if (USE_MOCK) return getStudents(filters);
+  const query = new URLSearchParams();
+  if (filters.search) query.set("search", filters.search);
+  if (filters.course) query.set("course", filters.course);
+  const suffix = query.size ? `?${query.toString()}` : "";
+  return apiRequest<StudentRecord[]>(`/students${suffix}`);
+}
+
+export async function saveStudentStatus(email: string, status: string): Promise<void> {
+  if (USE_MOCK) {
+    updateStudentStatus(email, status);
+    return;
+  }
+  await apiRequest(`/students/email/${encodeURIComponent(email)}`, {
+    method: "PUT",
+    body: JSON.stringify({ status }),
+  });
+}
+
 /* ------------------------------------------------------------------ */
 /* Certificates                                                         */
 /* ------------------------------------------------------------------ */
@@ -339,6 +530,28 @@ export function revokeCertificate(certificateId: string) {
   return updated;
 }
 
+export async function fetchAdminCertificates(): Promise<CertificateRecord[]> {
+  return USE_MOCK ? getCertificates() : apiRequest<CertificateRecord[]>("/certificates");
+}
+
+export async function createAdminCertificate(
+  studentName: string,
+  courseName: string,
+  completionDate: string,
+): Promise<CertificateRecord> {
+  if (USE_MOCK) return issueCertificate(studentName, courseName, completionDate);
+  return apiRequest<CertificateRecord>("/certificates", {
+    method: "POST",
+    body: JSON.stringify({ studentName, courseName, completionDate }),
+  });
+}
+
+export async function revokeAdminCertificate(certificateId: string): Promise<CertificateRecord[]> {
+  if (USE_MOCK) return revokeCertificate(certificateId);
+  await apiRequest(`/certificates/${encodeURIComponent(certificateId)}/revoke`, { method: "PUT" });
+  return fetchAdminCertificates();
+}
+
 export interface CertificateResult {
   valid: boolean;
   studentName?: string;
@@ -369,7 +582,5 @@ export async function verifyCertificate(certificateId: string): Promise<Certific
       issueDate: cert.completionDate,
     });
   }
-  const res = await fetch(`${API_BASE_URL}/certificates/verify/${encodeURIComponent(certificateId)}`);
-  if (!res.ok) return { valid: false };
-  return res.json();
+  return apiRequest<CertificateResult>(`/certificates/verify/${encodeURIComponent(certificateId)}`);
 }

@@ -7,7 +7,6 @@ import logo from "../assets/images/bci-logo.png";
 export default function Hero() {
   return (
     <section className="relative overflow-hidden bg-hero-gradient pb-24 pt-16 md:pb-32 md:pt-24">
-      {/* animated particles */}
       <div className="pointer-events-none absolute inset-0 overflow-hidden">
         {Array.from({ length: 18 }).map((_, i) => (
           <motion.span
@@ -47,7 +46,7 @@ export default function Hero() {
               Explore Courses <ArrowRight size={18} />
             </Link>
             <Link to="/courses/demo-class" className="btn-secondary border-white bg-white text-brand-700 hover:border-gold-100 hover:bg-gold-100 hover:text-brand-700">
-              <PlayCircle size={18} /> Join Demo Class
+              <PlayCircle size={18} /> Free Demo Class
             </Link>
           </div>
         </motion.div>
@@ -56,11 +55,11 @@ export default function Hero() {
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.8, delay: 0.2 }}
-          className="relative mx-auto flex h-72 w-72 items-center justify-center rounded-full border border-gold-500/30 md:h-96 md:w-96"
+          className="relative mx-auto flex h-80 w-80 items-center justify-center md:h-[26rem] md:w-[26rem]"
         >
           <div className="absolute inset-0 animate-pulse rounded-full bg-gold-500/10 blur-3xl" />
-          <div className="glass-card flex h-56 w-56 items-center justify-center rounded-full p-8 md:h-72 md:w-72">
-            <img src={logo} alt="BCI" className="h-auto w-full object-contain" />
+          <div className="relative flex h-64 w-64 items-center justify-center rounded-full bg-white shadow-[0_20px_50px_rgba(13,61,109,0.2)] md:h-[20rem] md:w-[20rem]">
+            <img src={logo} alt="BCI" className="h-40 w-40 rounded-full object-contain md:h-56 md:w-56" />
           </div>
           {["Prompt Engineering", "AI Agents", "Automation", "Branding"].map((label, i) => (
             <motion.div

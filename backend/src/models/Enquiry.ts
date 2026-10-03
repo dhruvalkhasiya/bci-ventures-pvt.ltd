@@ -1,6 +1,6 @@
 import mongoose, { Schema, Document } from "mongoose";
 
-export type EnquiryStatus = "New" | "Contacted" | "Interested" | "Registered" | "Closed";
+export type EnquiryStatus = "New" | "Contacted" | "Interested" | "Converted" | "Closed";
 
 export interface IEnquiry extends Document {
   name: string;
@@ -20,7 +20,7 @@ const enquirySchema = new Schema<IEnquiry>({
   message: { type: String, required: true },
   status: {
     type: String,
-    enum: ["New", "Contacted", "Interested", "Registered", "Closed"],
+    enum: ["New", "Contacted", "Interested", "Converted", "Closed"],
     default: "New",
   },
   createdAt: { type: Date, default: Date.now },

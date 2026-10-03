@@ -6,7 +6,7 @@ import { adminMiddleware } from "../middleware/adminMiddleware";
 const router = Router();
 
 router.get("/", authMiddleware, adminMiddleware, getStudents);
+router.put("/email/:email", authMiddleware, adminMiddleware, updateStudent);
 router.get("/:id", authMiddleware, adminMiddleware, getStudentById);
-router.put("/:id", authMiddleware, adminMiddleware, updateStudent);
 
 export default router;

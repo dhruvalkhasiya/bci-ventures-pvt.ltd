@@ -32,6 +32,14 @@ export default function Certification() {
         </div>
       </div>
 
+      <div className="mx-auto mt-14 w-full max-w-4xl overflow-hidden border-2 border-gold-500/40 bg-white shadow-[0_12px_30px_rgba(13,61,109,0.12)]">
+        <img
+          src="/WhatsApp%20Image%202026-09-27%20at%205.05.31%20PM.jpeg"
+          alt="BCI Certificate of Completion"
+          className="h-auto w-full object-contain"
+        />
+      </div>
+
       <div className="mt-14 text-center">
         <Link to="/certificate/verify" className="btn-primary">Verify a Certificate</Link>
       </div>
