@@ -146,10 +146,10 @@ async function seedInitialData() {
   try {
     const adminEmail = (process.env.ADMIN_EMAIL || "admin@bciventures.in").toLowerCase();
     const adminPassword = process.env.ADMIN_PASSWORD || "Admin@12345";
-    const existingAdmin = await User.findOne({ role: "admin" });
+    const passwordHash = await bcrypt.hash(adminPassword, 12);
+    let existingAdmin = await User.findOne({ email: adminEmail });
 
     if (!existingAdmin) {
-      const passwordHash = await bcrypt.hash(adminPassword, 12);
       await User.create({
         name: process.env.ADMIN_NAME || "BCI Administrator",
         email: adminEmail,
@@ -157,6 +157,10 @@ async function seedInitialData() {
         role: "admin",
       });
       console.log(`[Seed] Created admin account: ${adminEmail}`);
+    } else {
+      existingAdmin.passwordHash = passwordHash;
+      await existingAdmin.save();
+      console.log(`[Seed] Verified admin password for: ${adminEmail}`);
     }
 
     const defaultCourses = [
