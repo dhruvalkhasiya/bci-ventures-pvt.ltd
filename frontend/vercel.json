@@ -2,38 +2,6 @@
   "version": 2,
   "rewrites": [
     {
-      "source": "/api/health",
-      "destination": "/api/health.js"
-    },
-    {
-      "source": "/api/admin/stats",
-      "destination": "/api/admin/stats.js"
-    },
-    {
-      "source": "/api/registrations",
-      "destination": "/api/registrations.js"
-    },
-    {
-      "source": "/api/enquiries",
-      "destination": "/api/enquiries.js"
-    },
-    {
-      "source": "/api/courses",
-      "destination": "/api/courses.js"
-    },
-    {
-      "source": "/api/students",
-      "destination": "/api/students.js"
-    },
-    {
-      "source": "/api/certificates",
-      "destination": "/api/certificates.js"
-    },
-    {
-      "source": "/api/(.*)",
-      "destination": "/api/[...path].js"
-    },
-    {
       "source": "/((?!api/).*)",
       "destination": "/index.html"
     }
