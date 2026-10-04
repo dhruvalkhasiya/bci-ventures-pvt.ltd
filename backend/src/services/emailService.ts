@@ -201,7 +201,7 @@ export async function sendStudentConfirmationEmail(data: RegistrationNotificatio
 
         <p>If you have any urgent questions, feel free to reach out directly to our support team on WhatsApp.</p>
         <div style="margin-top: 24px; text-align: center;">
-          <a href="https://wa.me/919979206007" style="background-color: #25D366; color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 4px; display: inline-block; font-weight: bold;">Connect on WhatsApp</a>
+          <a href="https://wa.me/918000414111" style="background-color: #25D366; color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 4px; display: inline-block; font-weight: bold;">Connect on WhatsApp</a>
         </div>
       </div>
       <div style="background-color: #f8fafc; padding: 16px; text-align: center; font-size: 12px; color: #888888; border-top: 1px solid #e3eaf0;">

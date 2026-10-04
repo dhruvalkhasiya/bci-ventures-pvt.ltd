@@ -1,4 +1,4 @@
-const OFFICIAL_WHATSAPP_NUMBER = "919979206007";
+const OFFICIAL_WHATSAPP_NUMBER = "918000414111";
 
 export function getWhatsAppUrl(params: {
   type: "general" | "course" | "registration" | "referral";

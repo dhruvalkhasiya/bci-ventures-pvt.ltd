@@ -31,9 +31,9 @@ export const company = {
   ],
   contact: {
     email: "bci992026@gmail.com",
-    phone: "+91 99792 06007",
-    phoneSecondary: "+91 80004 14111",
-    whatsapp: "919979206007",
+    phone: "+91 80004 14111",
+    phoneSecondary: "+91 99792 06007",
+    whatsapp: "918000414111",
     address: "Billionaire Concept Ingenuity Private Limited, India",
   },
 };

@@ -3,8 +3,8 @@
  * WhatsApp Number: +91 99792 06007
  */
 
-export const WHATSAPP_NUMBER = "919979206007";
-export const WHATSAPP_DISPLAY_PHONE = "+91 99792 06007";
+export const WHATSAPP_NUMBER = "918000414111";
+export const WHATSAPP_DISPLAY_PHONE = "+91 80004 14111";
 
 export interface WhatsAppOptions {
   type?: "general" | "course" | "registration" | "referral";

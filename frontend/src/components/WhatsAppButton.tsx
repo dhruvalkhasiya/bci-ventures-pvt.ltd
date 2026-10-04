@@ -14,7 +14,7 @@ export default function WhatsAppButton() {
     >
       <MessageCircle size={24} className="shrink-0" />
       <span className="hidden font-bold text-xs sm:inline-block">
-        Batch Info WhatsApp (+91 99792 06007)
+        Batch Info WhatsApp (+91 80004 14111)
       </span>
     </a>
   );

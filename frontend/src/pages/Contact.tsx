@@ -38,7 +38,7 @@ export default function Contact() {
               </div>
               <div>
                 <p className="text-sm text-ink/50">Instant Support</p>
-                <p className="font-semibold text-emerald-700 dark:text-emerald-400">WhatsApp Chat (+91 99792 06007)</p>
+                <p className="font-semibold text-emerald-700 dark:text-emerald-400">WhatsApp Chat (+91 80004 14111)</p>
               </div>
             </div>
             <a

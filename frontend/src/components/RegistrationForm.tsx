@@ -63,7 +63,7 @@ export default function RegistrationForm() {
             rel="noopener noreferrer"
             className="btn-primary"
           >
-            Connect on WhatsApp (+91 99792 06007)
+            Connect on WhatsApp (+91 80004 14111)
           </a>
           <a href="/courses" className="btn-secondary">Return to Courses</a>
         </div>
@@ -83,7 +83,7 @@ export default function RegistrationForm() {
       </div>
       <div>
         <label className="mb-1 block text-sm text-ink/70">Mobile Number</label>
-        <input required name="mobile" value={form.mobile} onChange={handleChange} className="input-field" placeholder="+91 99792 06007" />
+        <input required name="mobile" value={form.mobile} onChange={handleChange} className="input-field" placeholder="+91 80004 14111" />
       </div>
       <div>
         <label className="mb-1 block text-sm text-ink/70">Course</label>
