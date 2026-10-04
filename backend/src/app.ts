@@ -24,14 +24,34 @@ app.use(cors({
 		}
 		return callback(new Error("Origin is not allowed by CORS"));
 	},
+	credentials: true,
+	methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
+	allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With", "Accept"],
 }));
 app.use(express.json());
+
+app.get("/", (_req, res) => {
+	return res.json({
+		status: "ok",
+		service: "BCI Backend API",
+		health: "/api/health",
+	});
+});
+
+app.get("/api", (_req, res) => {
+	return res.json({
+		status: "ok",
+		service: "BCI Backend API",
+		health: "/api/health",
+	});
+});
 
 app.get("/api/health", (_req, res) => {
 	const databaseReady = mongoose.connection.readyState === 1;
 	const databaseState = ["disconnected", "connected", "connecting", "disconnecting"][mongoose.connection.readyState] || "unknown";
 	return res.status(databaseReady ? 200 : 503).json({
 		status: databaseReady ? "ok" : "degraded",
+		service: "BCI Backend API",
 		database: databaseState,
 	});
 });

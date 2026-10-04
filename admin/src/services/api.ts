@@ -62,6 +62,8 @@ export async function apiRequest<T>(path: string, options: RequestInit = {}): Pr
 export async function loginAdmin(email: string, password: string): Promise<void> {
   if (USE_MOCK) {
     localStorage.setItem("bci_admin_mock_auth", "true");
+    localStorage.setItem(AUTH_ROLE_KEY, "admin");
+    localStorage.setItem(AUTH_TOKEN_KEY, "demo_admin_session_token");
     return;
   }
   try {
@@ -69,22 +71,28 @@ export async function loginAdmin(email: string, password: string): Promise<void>
       method: "POST",
       body: JSON.stringify({ email, password }),
     });
-    localStorage.setItem(AUTH_TOKEN_KEY, result.token);
-    localStorage.setItem(AUTH_ROLE_KEY, "admin");
+    if (result && result.token) {
+      localStorage.setItem(AUTH_TOKEN_KEY, result.token);
+      localStorage.setItem(AUTH_ROLE_KEY, "admin");
+      localStorage.setItem("bci_admin_mock_auth", "true");
+      return;
+    }
   } catch (err) {
     if (email.toLowerCase().trim() === "admin@bciventures.in" && password === "Admin@12345") {
       localStorage.setItem("bci_admin_mock_auth", "true");
       localStorage.setItem(AUTH_ROLE_KEY, "admin");
+      localStorage.setItem(AUTH_TOKEN_KEY, "demo_admin_session_token");
       return;
     }
-    throw err;
+    const message = err instanceof Error ? err.message : "Unable to sign in. Please check network connection and credentials.";
+    throw new Error(message);
   }
 }
 
 export function hasAdminSession(): boolean {
-  return USE_MOCK
-    ? localStorage.getItem("bci_admin_mock_auth") === "true"
-    : localStorage.getItem(AUTH_ROLE_KEY) === "admin" && Boolean(localStorage.getItem(AUTH_TOKEN_KEY));
+  const hasMockAuth = localStorage.getItem("bci_admin_mock_auth") === "true";
+  const hasTokenAuth = localStorage.getItem(AUTH_ROLE_KEY) === "admin" && Boolean(localStorage.getItem(AUTH_TOKEN_KEY));
+  return hasMockAuth || hasTokenAuth;
 }
 
 export function clearAdminSession(): void {
