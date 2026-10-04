@@ -10,7 +10,26 @@
 import { courses as staticCourses, Course } from "../data/courses";
 
 export const USE_MOCK = import.meta.env.VITE_USE_MOCK === "true";
-const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || "http://localhost:5000/api").replace(/\/$/, "");
+
+export function getApiBaseUrl(): string {
+  const envUrl =
+    import.meta.env.VITE_API_BASE_URL ||
+    import.meta.env.VITE_API_URL ||
+    import.meta.env.NEXT_PUBLIC_API_URL;
+  if (envUrl) {
+    return envUrl.replace(/\/$/, "");
+  }
+  if (typeof window !== "undefined" && window.location && window.location.origin) {
+    const isLocalhost =
+      window.location.hostname === "localhost" ||
+      window.location.hostname === "127.0.0.1";
+    if (!isLocalhost) {
+      return `${window.location.origin}/api`;
+    }
+  }
+  return "http://localhost:5000/api";
+}
+
 const AUTH_TOKEN_KEY = "bci_admin_token";
 const AUTH_ROLE_KEY = "bci_auth_role";
 
@@ -21,16 +40,43 @@ interface ApiResponse<T> {
 }
 
 export async function apiRequest<T>(path: string, options: RequestInit = {}): Promise<T> {
+  const baseUrl = getApiBaseUrl();
+  const normalizedPath = path.startsWith('/') ? path : `/${path}`;
+  const fullUrl = `${baseUrl}${normalizedPath}`;
+
   const headers = new Headers(options.headers);
   if (options.body && !headers.has("Content-Type")) headers.set("Content-Type", "application/json");
   const token = localStorage.getItem(AUTH_TOKEN_KEY);
   if (token) headers.set("Authorization", `Bearer ${token}`);
 
-  const response = await fetch(`${API_BASE_URL}${path}`, { ...options, headers });
-  const result = (await response.json()) as ApiResponse<T>;
-  if (!response.ok || !result.success) {
+  console.log(`[API Request] ${options.method || 'GET'} ${fullUrl}`);
+
+  let response: Response;
+  try {
+    response = await fetch(fullUrl, { ...options, headers });
+  } catch (netErr: any) {
+    console.error(`[API Network Error] ${options.method || 'GET'} ${fullUrl}:`, netErr);
+    throw new Error(`Failed to fetch from ${fullUrl}. Please check network connection or backend configuration.`);
+  }
+
+  let result: ApiResponse<T> | null = null;
+  const contentType = response.headers.get("content-type") || "";
+  if (contentType.includes("application/json")) {
+    try {
+      result = (await response.json()) as ApiResponse<T>;
+    } catch (parseErr) {
+      console.error(`[API JSON Parse Error] ${fullUrl}:`, parseErr);
+    }
+  } else {
+    const text = await response.text();
+    console.warn(`[API Non-JSON Response] ${fullUrl} Status: ${response.status}`, text);
+  }
+
+  if (!response.ok || !result?.success) {
     if (response.status === 401) clearAdminSession();
-    throw new Error(result.message || "The request could not be completed.");
+    const errorMsg = result?.message || `API call failed with status ${response.status} (${response.statusText})`;
+    console.error(`[API Error] ${options.method || 'GET'} ${fullUrl}:`, errorMsg);
+    throw new Error(errorMsg);
   }
   return result.data as T;
 }
@@ -160,7 +206,7 @@ export async function downloadRegistrationWorkbook(): Promise<void> {
     return;
   }
   const token = localStorage.getItem(AUTH_TOKEN_KEY);
-  const response = await fetch(`${API_BASE_URL}/registrations/export-excel`, {
+  const response = await fetch(`${getApiBaseUrl()}/registrations/export-excel`, {
     headers: token ? { Authorization: `Bearer ${token}` } : {},
   });
   if (!response.ok) throw new Error("Failed to download Excel workbook.");
