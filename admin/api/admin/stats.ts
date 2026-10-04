@@ -3,7 +3,7 @@ import { connectDatabase } from "../../../backend/src/config/database";
 
 let connectionPromise: Promise<void> | null = null;
 
-export default async function handler(req: any, res: any) {
+app.use(async (_req, _res, next) => {
   if (!connectionPromise) {
     connectionPromise = connectDatabase().catch((err) => {
       console.error("[Vercel DB Connection Error]:", err);
@@ -14,5 +14,7 @@ export default async function handler(req: any, res: any) {
   } catch {
     // Continue
   }
-  return app(req, res);
-}
+  next();
+});
+
+export default app;
