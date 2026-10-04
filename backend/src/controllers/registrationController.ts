@@ -24,13 +24,15 @@ async function getDisplayCourseTitle(courseInput: string): Promise<string> {
   const key = courseInput.trim().toLowerCase();
   if (COURSE_TITLE_MAP[key]) return COURSE_TITLE_MAP[key];
 
-  try {
-    const found =
-      (await Course.findOne({ slug: courseInput })) ||
-      (/^[a-f\d]{24}$/i.test(courseInput) ? await Course.findById(courseInput) : null);
-    if (found && found.title) return found.title;
-  } catch {
-    // ignore lookup error
+  if (mongoose.connection.readyState === 1) {
+    try {
+      const found =
+        (await Course.findOne({ slug: courseInput })) ||
+        (/^[a-f\d]{24}$/i.test(courseInput) ? await Course.findById(courseInput) : null);
+      if (found && found.title) return found.title;
+    } catch {
+      // ignore lookup error
+    }
   }
   return courseInput;
 }

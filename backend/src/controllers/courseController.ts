@@ -1,4 +1,5 @@
 import { Request, Response } from "express";
+import mongoose from "mongoose";
 import Course from "../models/Course";
 import { success, failure } from "../utils/response";
 
@@ -10,7 +11,7 @@ function serializeCourse(course: any) {
   const record = course.toObject ? course.toObject() : course;
   return {
     ...record,
-    id: String(record._id),
+    id: String(record._id || record.id || ""),
     shortTitle: record.shortTitle || record.title,
     overview: record.overview || record.description || "",
     description: record.description || record.overview || "",
@@ -24,6 +25,9 @@ function serializeCourse(course: any) {
 
 export async function getCourses(_req: Request, res: Response) {
   try {
+    if (mongoose.connection.readyState !== 1) {
+      return success(res, [], "Database disconnected: returned empty courses array");
+    }
     const courses = await Course.find({ status: "published" }).sort({ createdAt: 1 });
     return success(res, courses.map(serializeCourse));
   } catch (err: any) {
@@ -33,6 +37,9 @@ export async function getCourses(_req: Request, res: Response) {
 
 export async function getAdminCourses(_req: Request, res: Response) {
   try {
+    if (mongoose.connection.readyState !== 1) {
+      return success(res, [], "Database disconnected: returned empty admin courses array");
+    }
     const courses = await Course.find().sort({ createdAt: 1 });
     return success(res, courses.map(serializeCourse));
   } catch (err: any) {
@@ -42,6 +49,9 @@ export async function getAdminCourses(_req: Request, res: Response) {
 
 export async function getCourseById(req: Request, res: Response) {
   try {
+    if (mongoose.connection.readyState !== 1) {
+      return failure(res, "Database disconnected: course not found", 404);
+    }
     let course = await Course.findOne({ slug: req.params.id, status: "published" });
     if (!course && /^[a-f\d]{24}$/i.test(req.params.id)) {
       course = await Course.findOne({ _id: req.params.id, status: "published" });
@@ -55,6 +65,9 @@ export async function getCourseById(req: Request, res: Response) {
 
 export async function createCourse(req: Request, res: Response) {
   try {
+    if (mongoose.connection.readyState !== 1) {
+      return failure(res, "Database disconnected: cannot create course", 503);
+    }
     const payload = { ...req.body };
     payload.slug = payload.slug || slugify(payload.title);
     payload.shortTitle = payload.shortTitle || payload.title;
@@ -70,6 +83,9 @@ export async function createCourse(req: Request, res: Response) {
 
 export async function updateCourse(req: Request, res: Response) {
   try {
+    if (mongoose.connection.readyState !== 1) {
+      return failure(res, "Database disconnected: cannot update course", 503);
+    }
     const course = await Course.findOneAndUpdate({ slug: req.params.id }, req.body, { new: true, runValidators: true })
       || ( /^[a-f\d]{24}$/i.test(req.params.id)
         ? await Course.findByIdAndUpdate(req.params.id, req.body, { new: true, runValidators: true })
@@ -83,6 +99,9 @@ export async function updateCourse(req: Request, res: Response) {
 
 export async function deleteCourse(req: Request, res: Response) {
   try {
+    if (mongoose.connection.readyState !== 1) {
+      return failure(res, "Database disconnected: cannot delete course", 503);
+    }
     const course = await Course.findOneAndDelete({ slug: req.params.id })
       || ( /^[a-f\d]{24}$/i.test(req.params.id) ? await Course.findByIdAndDelete(req.params.id) : null );
     if (!course) return failure(res, "Course not found", 404);

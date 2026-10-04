@@ -97,6 +97,8 @@ const proModules = [
   { number: 10, title: "Professional BCI Pro Certification & Project Launch", description: "Final live client project verification, portfolio review, and BCI Pro Master Certificate issuance." },
 ];
 
+mongoose.set("bufferCommands", false);
+
 export async function connectDatabase() {
   if (mongoose.connection.readyState === 1) {
     return;
@@ -106,7 +108,7 @@ export async function connectDatabase() {
 
   if (mongoUri && !mongoUri.includes("127.0.0.1:27017")) {
     try {
-      await mongoose.connect(mongoUri, { serverSelectionTimeoutMS: 10000 });
+      await mongoose.connect(mongoUri, { serverSelectionTimeoutMS: 3000, connectTimeoutMS: 3000 });
       console.log("[Database] Connected to external MONGO_URI");
       await seedInitialData();
       return;
