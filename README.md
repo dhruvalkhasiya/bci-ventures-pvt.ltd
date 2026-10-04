@@ -7,10 +7,8 @@ Production-ready architecture for **Billionaire Concept Ingenuity Private Limite
 ```
 BCI-Ventures/
 │
-├── frontend/     # Public BCI Website (React, Vite, Tailwind CSS)
-├── backend/      # Express API Server & Vercel Serverless Function Handler
-├── admin/        # Standalone Admin Portal Application (React, Vite, Tailwind)
-└── database/     # Mongoose Schemas, Collection Models & Documentation
+├── frontend/     # Public BCI Website and Admin Portal (React, Vite, Tailwind CSS)
+└── backend/      # Express API Server, Mongoose Models & Vercel Functions
 ```
 
 ---
@@ -31,12 +29,7 @@ npm install
 npm run dev
 ```
 
-### 3. Start Admin Portal (Port 5174)
-```bash
-cd admin
-npm install
-npm run dev
-```
+The admin portal is part of the public frontend. Open `/admin/login` on the frontend dev server.
 
 ---
 
@@ -50,17 +43,11 @@ npm run dev
    - `CLIENT_ORIGIN` = `*`
 3. Deploy and copy your backend URL (e.g. `https://bci-ventures-backend.vercel.app`).
 
-### Step 2: Deploy Public Frontend (`/frontend`)
+### Step 2: Deploy Frontend and Admin Portal (`/frontend`)
 1. Import repository to Vercel → Set Root Directory: `frontend`
 2. Add Environment Variable:
    - `VITE_API_BASE_URL` = `https://bci-ventures-backend.vercel.app/api`
-3. Deploy.
-
-### Step 3: Deploy Admin Panel (`/admin`)
-1. Import repository to Vercel → Set Root Directory: `admin`
-2. Add Environment Variable:
-   - `VITE_API_BASE_URL` = `https://bci-ventures-backend.vercel.app/api`
-3. Deploy.
+3. Deploy. The admin portal is available at `/admin/login` on the same domain.
 
 ---
 

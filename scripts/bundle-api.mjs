@@ -34,7 +34,7 @@ const endpoints = [
   "api/index.js",
 ];
 
-const destDirs = ["api", "frontend/api", "admin/api", "backend/api"];
+const destDirs = ["api", "frontend/api", "backend/api"];
 
 console.log("[Bundle API] Pre-bundling serverless API handlers for Vercel...");
 
@@ -73,8 +73,4 @@ console.log("[Bundle API] Unifying dist output for monorepo static assets...");
 if (fs.existsSync("frontend/dist")) {
   copyRecursiveSync("frontend/dist", "dist");
 }
-if (fs.existsSync("admin/dist")) {
-  copyRecursiveSync("admin/dist", "dist/admin");
-}
-
-console.log("[Bundle API] Successfully deployed pre-bundled functions and static outputs across root dist!");
+console.log("[Bundle API] Successfully deployed pre-bundled functions and frontend assets across root dist!");

@@ -5,11 +5,7 @@
       "destination": "/api/$1"
     },
     {
-      "source": "/admin/(.*)",
-      "destination": "/admin/index.html"
-    },
-    {
-      "source": "/((?!api|admin).*)",
+      "source": "/((?!api/).*)",
       "destination": "/index.html"
     }
   ]
