@@ -51,7 +51,7 @@ import Enquiry from "./models/Enquiry";
 import Course from "./models/Course";
 import { success, failure } from "./utils/response";
 
-app.get("/api/health", (_req, res) => {
+const getHealthHandler = (_req: any, res: any) => {
 	const databaseReady = mongoose.connection.readyState === 1;
 	const databaseState = ["disconnected", "connected", "connecting", "disconnecting"][mongoose.connection.readyState] || "unknown";
 	return res.status(databaseReady ? 200 : 503).json({
@@ -59,9 +59,9 @@ app.get("/api/health", (_req, res) => {
 		service: "BCI Backend API",
 		database: databaseState,
 	});
-});
+};
 
-app.get("/api/admin/stats", async (_req, res) => {
+const getAdminStatsHandler = async (_req: any, res: any) => {
 	try {
 		let totalRegistrations = 0;
 		let newEnquiries = 0;
@@ -98,14 +98,31 @@ app.get("/api/admin/stats", async (_req, res) => {
 			`Admin stats fallback: ${err.message || "Database connecting"}`,
 		);
 	}
-});
+};
+
+app.get("/api/health", getHealthHandler);
+app.get("/health", getHealthHandler);
+
+app.get("/api/admin/stats", getAdminStatsHandler);
+app.get("/admin/stats", getAdminStatsHandler);
 
 app.use("/api/auth", authRoutes);
+app.use("/auth", authRoutes);
+
 app.use("/api/courses", courseRoutes);
+app.use("/courses", courseRoutes);
+
 app.use("/api/students", studentRoutes);
+app.use("/students", studentRoutes);
+
 app.use("/api/enquiries", enquiryRoutes);
+app.use("/enquiries", enquiryRoutes);
+
 app.use("/api/registrations", registrationRoutes);
+app.use("/registrations", registrationRoutes);
+
 app.use("/api/certificates", certificateRoutes);
+app.use("/certificates", certificateRoutes);
 
 app.use(notFoundHandler);
 app.use(errorHandler);
