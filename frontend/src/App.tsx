@@ -39,7 +39,8 @@ export default function App() {
           <Route path="*" element={<NotFound />} />
         </Route>
 
-        {/* Admin */}
+        {/* Sign-in is reachable from the public site navigation. */}
+        <Route path="/login" element={<AdminLogin />} />
         <Route path="/admin/login" element={<AdminLogin />} />
         <Route path="/admin" element={<AdminLayout />}>
           <Route path="dashboard" element={<Dashboard />} />

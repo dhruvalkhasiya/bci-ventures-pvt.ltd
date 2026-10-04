@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Loader2, ShieldCheck, KeyRound } from "lucide-react";
 import { loginAdmin, USE_MOCK } from "../services/api";
 
@@ -80,6 +80,9 @@ export default function AdminLogin() {
         >
           <KeyRound size={14} /> Fill Demo Credentials (admin@bciventures.in)
         </button>
+        <p className="text-center text-sm text-ink/60">
+          New to BCI? <Link to="/register" className="font-semibold text-brand-700 hover:text-gold-600">Register here</Link>
+        </p>
       </form>
     </div>
   );

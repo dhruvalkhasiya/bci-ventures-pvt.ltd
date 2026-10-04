@@ -50,6 +50,9 @@ export default function Navbar() {
                 {link.label}
               </NavLink>
             ))}
+            <Link to="/login" className="text-sm font-medium text-ink/80 transition-colors hover:text-brand-700">
+              Login
+            </Link>
             <Link to="/register" className="btn-primary !py-2 !px-5 text-sm">
               Register Now
             </Link>
@@ -74,6 +77,9 @@ export default function Navbar() {
               {link.label}
             </NavLink>
           ))}
+          <Link to="/login" onClick={() => setOpen(false)} className="text-ink/90 hover:text-brand-700">
+            Login
+          </Link>
           <Link to="/register" onClick={() => setOpen(false)} className="btn-primary text-sm">
             Register Now
           </Link>
