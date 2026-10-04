@@ -1,8 +1,5 @@
-module.exports = async function handler(req, res) {
-  res.setHeader("Content-Type", "application/json");
-  return res.status(200).json({
-    status: "ok",
-    service: "BCI Backend API Health CommonJS Test",
-    timestamp: new Date().toISOString(),
-  });
-};
+import runServerless from "./_runner";
+
+export default async function handler(req: any, res: any) {
+  return runServerless(req, res);
+}
