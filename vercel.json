@@ -2,15 +2,11 @@
   "version": 2,
   "rewrites": [
     {
-      "source": "/api/(.*)",
-      "destination": "/api/$1"
-    },
-    {
       "source": "/admin/(.*)",
       "destination": "/admin/index.html"
     },
     {
-      "source": "/((?!api/).*)",
+      "source": "/((?!api|admin).*)",
       "destination": "/frontend/index.html"
     }
   ]
