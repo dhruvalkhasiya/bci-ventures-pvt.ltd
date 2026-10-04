@@ -11,14 +11,22 @@ export default function Dashboard() {
 
   useEffect(() => {
     let active = true;
-    Promise.all([fetchRegistrations(), fetchEnquiries(), fetchAdminCourses()])
-      .then(([registrationRecords, enquiryRecords, courses]) => {
+    Promise.allSettled([fetchRegistrations(), fetchEnquiries(), fetchAdminCourses()])
+      .then(([regRes, enqRes, courseRes]) => {
         if (!active) return;
-        setRegistrations(registrationRecords || []);
-        setEnquiries(enquiryRecords || []);
-        setCourseCount((courses || []).filter((course) => course.status === "published").length);
+        const regRecords = regRes.status === "fulfilled" ? regRes.value : [];
+        const enqRecords = enqRes.status === "fulfilled" ? enqRes.value : [];
+        const courseRecords = courseRes.status === "fulfilled" ? courseRes.value : [];
+
+        setRegistrations(regRecords || []);
+        setEnquiries(enqRecords || []);
+        setCourseCount((courseRecords || []).filter((course: any) => course.status === "published").length);
+
+        const rejections = [regRes, enqRes, courseRes].filter((r): r is PromiseRejectedResult => r.status === "rejected");
+        if (rejections.length > 0) {
+          setError(rejections[0].reason?.message || "Failed to load complete dashboard data.");
+        }
       })
-      .catch((err) => setError(err instanceof Error ? err.message : "Unable to load the admin dashboard."))
       .finally(() => { if (active) setLoading(false); });
     return () => { active = false; };
   }, []);

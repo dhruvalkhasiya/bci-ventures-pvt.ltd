@@ -46,6 +46,11 @@ app.get("/api", (_req, res) => {
 	});
 });
 
+import Registration from "./models/Registration";
+import Enquiry from "./models/Enquiry";
+import Course from "./models/Course";
+import { success, failure } from "./utils/response";
+
 app.get("/api/health", (_req, res) => {
 	const databaseReady = mongoose.connection.readyState === 1;
 	const databaseState = ["disconnected", "connected", "connecting", "disconnecting"][mongoose.connection.readyState] || "unknown";
@@ -54,6 +59,36 @@ app.get("/api/health", (_req, res) => {
 		service: "BCI Backend API",
 		database: databaseState,
 	});
+});
+
+app.get("/api/admin/stats", async (_req, res) => {
+	try {
+		let totalRegistrations = 0;
+		let newEnquiries = 0;
+		let publishedCourses = 0;
+		let enrolledStudents = 0;
+
+		if (mongoose.connection.readyState === 1) {
+			totalRegistrations = await Registration.countDocuments();
+			newEnquiries = await Enquiry.countDocuments({ status: "New" });
+			publishedCourses = await Course.countDocuments({ status: "published" });
+			const registrations = await Registration.find().select("email");
+			enrolledStudents = new Set(registrations.map((r) => (r.email || "").toLowerCase())).size;
+		}
+
+		return success(
+			res,
+			{
+				totalRegistrations,
+				newEnquiries,
+				publishedCourses,
+				enrolledStudents,
+			},
+			"Admin dashboard stats retrieved successfully",
+		);
+	} catch (err: any) {
+		return failure(res, err.message, 500);
+	}
 });
 
 app.use("/api/auth", authRoutes);

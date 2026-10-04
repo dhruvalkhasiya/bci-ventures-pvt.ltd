@@ -59,22 +59,24 @@ export async function apiRequest<T>(path: string, options: RequestInit = {}): Pr
     throw new Error(`Failed to fetch from ${fullUrl}. Please check network connection or backend configuration.`);
   }
 
-  let result: ApiResponse<T> | null = null;
   const contentType = response.headers.get("content-type") || "";
-  if (contentType.includes("application/json")) {
+  const rawText = await response.text();
+  const preview = rawText.slice(0, 200).replace(/\s+/g, " ");
+
+  let result: ApiResponse<T> | null = null;
+  if (contentType.includes("application/json") && rawText.trim()) {
     try {
-      result = (await response.json()) as ApiResponse<T>;
+      result = JSON.parse(rawText) as ApiResponse<T>;
     } catch (parseErr) {
       console.error(`[API JSON Parse Error] ${fullUrl}:`, parseErr);
     }
-  } else {
-    const text = await response.text();
-    console.warn(`[API Non-JSON Response] ${fullUrl} Status: ${response.status}`, text);
   }
 
-  if (!response.ok || !result?.success) {
+  if (!response.ok || !result || result.success !== true) {
     if (response.status === 401) clearAdminSession();
-    const errorMsg = result?.message || `API call failed with status ${response.status} (${response.statusText})`;
+    const details = `Status: ${response.status} (${contentType || "no-content-type"}) | Preview: "${preview || '[empty]'}"`;
+    const serverMsg = result?.message || (typeof result === "object" && result && "error" in result ? (result as any).error : null);
+    const errorMsg = serverMsg ? `${serverMsg} [${details}]` : `API call failed with ${details}`;
     console.error(`[API Error] ${options.method || 'GET'} ${fullUrl}:`, errorMsg);
     throw new Error(errorMsg);
   }
