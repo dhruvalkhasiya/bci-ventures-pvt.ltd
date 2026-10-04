@@ -2,6 +2,26 @@ import { execSync } from "child_process";
 import fs from "fs";
 import path from "path";
 
+function copyRecursiveSync(src, dest) {
+  const exists = fs.existsSync(src);
+  const stats = exists && fs.statSync(src);
+  const isDirectory = exists && stats.isDirectory();
+  if (isDirectory) {
+    if (!fs.existsSync(dest)) {
+      fs.mkdirSync(dest, { recursive: true });
+    }
+    fs.readdirSync(src).forEach((childItemName) => {
+      copyRecursiveSync(path.join(src, childItemName), path.join(dest, childItemName));
+    });
+  } else if (exists) {
+    const destDir = path.dirname(dest);
+    if (!fs.existsSync(destDir)) {
+      fs.mkdirSync(destDir, { recursive: true });
+    }
+    fs.copyFileSync(src, dest);
+  }
+}
+
 const endpoints = [
   "api/health.js",
   "api/admin/stats.js",
@@ -49,4 +69,12 @@ for (const destDir of destDirs) {
   }
 }
 
-console.log("[Bundle API] Successfully deployed pre-bundled functions across root, frontend/api, admin/api, and backend/api!");
+console.log("[Bundle API] Unifying dist output for monorepo static assets...");
+if (fs.existsSync("frontend/dist")) {
+  copyRecursiveSync("frontend/dist", "dist");
+}
+if (fs.existsSync("admin/dist")) {
+  copyRecursiveSync("admin/dist", "dist/admin");
+}
+
+console.log("[Bundle API] Successfully deployed pre-bundled functions and static outputs across root dist!");
