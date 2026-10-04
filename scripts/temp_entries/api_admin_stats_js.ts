@@ -1,5 +1,6 @@
-import app from "../backend/src/app";
-import { connectDatabase } from "../backend/src/config/database";
+
+import app from "../../backend/src/app";
+import { connectDatabase } from "../../backend/src/config/database";
 
 let connectionPromise: Promise<void> | null = null;
 
@@ -15,9 +16,15 @@ export default async function handler(req: any, res: any) {
     console.warn("[Vercel DB Warn]:", err);
   }
 
-  const rawUrl = req.url || "/";
-  if (!rawUrl.startsWith("/api")) {
-    req.url = "/api" + (rawUrl === "/" ? "" : rawUrl);
+  const routeBase = "/api/admin/stats";
+  const currentUrl = req.url || "/";
+
+  if (currentUrl.startsWith("/api")) {
+    // Keep full url as-is
+  } else if (routeBase === "/api/health" || routeBase === "/api/admin/stats") {
+    req.url = routeBase;
+  } else {
+    req.url = routeBase + (currentUrl === "/" ? "" : currentUrl);
   }
 
   return new Promise<void>((resolve) => {

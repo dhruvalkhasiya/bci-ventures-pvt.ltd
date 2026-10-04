@@ -49767,6 +49767,10 @@ async function handler(req, res) {
   } catch (err) {
     console.warn("[Vercel DB Warn]:", err);
   }
+  const rawUrl = req.url || "/";
+  if (!rawUrl.startsWith("/api")) {
+    req.url = "/api" + (rawUrl === "/" ? "" : rawUrl);
+  }
   return new Promise((resolve) => {
     let resolved = false;
     const done = () => {

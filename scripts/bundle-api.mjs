@@ -3,14 +3,14 @@ import fs from "fs";
 import path from "path";
 
 const targets = [
-  "api/index.js",
   "api/health.js",
+  "api/admin/stats.js",
   "api/registrations.js",
   "api/enquiries.js",
   "api/courses.js",
   "api/students.js",
   "api/certificates.js",
-  "api/admin/stats.js",
+  "api/[...path].js",
 ];
 
 console.log("[Bundle API] Pre-bundling serverless API handlers for Vercel...");
@@ -25,17 +25,17 @@ if (!fs.existsSync(adminDir)) {
   fs.mkdirSync(adminDir, { recursive: true });
 }
 
-const cmd = `npx esbuild scripts/api_entry.ts --bundle --platform=node --target=node18 --format=cjs --outfile=api/index.js --external:express --external:mongoose --external:cors --external:exceljs --external:bcrypt --external:bcryptjs --external:jsonwebtoken --external:nodemailer --external:firebase-admin`;
+const entryFile = path.resolve("scripts/api_entry.ts");
+
+const cmd = `npx esbuild "${entryFile}" --bundle --platform=node --target=node18 --format=cjs --outfile="api/index.js" --external:express --external:mongoose --external:cors --external:exceljs --external:bcrypt --external:bcryptjs --external:jsonwebtoken --external:nodemailer --external:firebase-admin`;
 
 execSync(cmd, { stdio: "inherit" });
+console.log("[Bundle API] Successfully compiled primary serverless bundle api/index.js");
 
 for (const target of targets) {
-  if (target !== "api/index.js") {
-    fs.copyFileSync("api/index.js", target);
-  }
+  const targetPath = path.resolve(target);
+  fs.copyFileSync(path.resolve("api/index.js"), targetPath);
+  console.log(`[Bundle API] Copied bundle to ${target}`);
 }
 
-// Copy to [...path].js as well for catch-all routing
-fs.copyFileSync("api/index.js", "api/[...path].js");
-
-console.log("[Bundle API] Successfully bundled all serverless endpoints!");
+console.log("[Bundle API] Successfully created all Vercel serverless functions!");
