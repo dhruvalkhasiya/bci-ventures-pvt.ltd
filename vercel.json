@@ -1,13 +1,55 @@
 {
   "version": 2,
-  "rewrites": [
+  "builds": [
     {
-      "source": "/admin/(.*)",
-      "destination": "/admin/index.html"
+      "src": "api/**/*.js",
+      "use": "@vercel/node"
     },
     {
-      "source": "/((?!api|admin).*)",
-      "destination": "/frontend/index.html"
+      "src": "package.json",
+      "use": "@vercel/static-build"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/api/health",
+      "dest": "/api/health.js"
+    },
+    {
+      "src": "/api/admin/stats",
+      "dest": "/api/admin/stats.js"
+    },
+    {
+      "src": "/api/registrations",
+      "dest": "/api/registrations.js"
+    },
+    {
+      "src": "/api/enquiries",
+      "dest": "/api/enquiries.js"
+    },
+    {
+      "src": "/api/courses",
+      "dest": "/api/courses.js"
+    },
+    {
+      "src": "/api/students",
+      "dest": "/api/students.js"
+    },
+    {
+      "src": "/api/certificates",
+      "dest": "/api/certificates.js"
+    },
+    {
+      "src": "/api/(.*)",
+      "dest": "/api/$1.js"
+    },
+    {
+      "src": "/admin/(.*)",
+      "dest": "/admin/index.html"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/frontend/index.html"
     }
   ]
 }
