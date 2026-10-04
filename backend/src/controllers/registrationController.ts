@@ -204,6 +204,33 @@ export async function getRegistrations(req: Request, res: Response) {
     const filter: Record<string, unknown> = {};
     if (status) filter.status = status;
     if (courseId) filter.courseId = courseId;
+
+    if (mongoose.connection.readyState === 1) {
+      try {
+        const rows = await readRegistrationsFromWorkbook();
+        for (const row of rows) {
+          if (!row.email) continue;
+          const existing = await Registration.findOne({ email: row.email.toLowerCase(), courseId: row.course });
+          if (!existing) {
+            await Registration.create({
+              name: row.fullName || "Student",
+              email: row.email.toLowerCase(),
+              phone: row.mobile || "",
+              courseId: row.course || "AI Course",
+              city: row.city || "Not Specified",
+              profession: row.profession || "",
+              date: row.date || "",
+              preferredBatch: row.preferredBatch || "",
+              message: row.message || "",
+              createdAt: row.submittedAt || new Date(),
+            });
+          }
+        }
+      } catch {
+        // ignore workbook read error
+      }
+    }
+
     const registrations = await Registration.find(filter).sort({ createdAt: -1 });
     return success(res, registrations.map(serializeRegistration));
   } catch (err: any) {

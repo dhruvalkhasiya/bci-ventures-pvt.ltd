@@ -9,20 +9,20 @@ function serializeEnquiry(enquiry: any) {
 
 export async function createEnquiry(req: Request, res: Response) {
   try {
-    const name = (req.body.name || req.body.fullName || "").trim();
-    const phone = (req.body.phone || req.body.mobile || "").trim();
+    const name = (req.body.name || req.body.fullName || "Visitor").trim();
+    const phone = (req.body.phone || req.body.mobile || req.body.contact || "").trim();
     const email = (req.body.email || "").trim().toLowerCase();
-    const course = (req.body.course || req.body.courseId || "").trim();
-    const message = (req.body.message || "").trim();
+    const course = (req.body.course || req.body.courseId || "General Inquiry").trim();
+    const message = (req.body.message || "General Inquiry from Website").trim();
 
-    if (!name || !phone || !email || !message) {
-      return failure(res, "Name, phone, email, and message are required.", 400);
+    if (!name || (!phone && !email)) {
+      return failure(res, "Name and contact information (phone or email) are required.", 400);
     }
 
     const enquiry = await Enquiry.create({
       name,
-      phone,
-      email,
+      phone: phone || "Not Provided",
+      email: email || "notprovided@bciventures.in",
       course,
       message,
       status: "New",
