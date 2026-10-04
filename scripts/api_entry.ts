@@ -3,16 +3,16 @@ import { connectDatabase } from "../backend/src/config/database";
 
 let connectionPromise: Promise<void> | null = null;
 
-export async function runServerless(req: any, res: any) {
+export default async function handler(req: any, res: any) {
   try {
     if (!connectionPromise) {
       connectionPromise = connectDatabase().catch((err) => {
-        console.error("[Vercel DB Connection Error]:", err);
+        console.error("[Vercel DB Error]:", err);
       });
     }
     await connectionPromise;
-  } catch (dbErr) {
-    console.warn("[Vercel Handler DB Warn]:", dbErr);
+  } catch (err) {
+    console.warn("[Vercel DB Warn]:", err);
   }
 
   return new Promise<void>((resolve) => {
@@ -38,5 +38,3 @@ export async function runServerless(req: any, res: any) {
     });
   });
 }
-
-export default runServerless;
