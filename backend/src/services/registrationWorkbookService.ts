@@ -1,6 +1,7 @@
 import ExcelJS from "exceljs";
 import path from "node:path";
 import fs from "node:fs";
+import os from "node:os";
 import { env } from "../config/environment";
 
 export interface RegistrationWorkbookRow {
@@ -21,6 +22,9 @@ const worksheetName = "Registrations";
 let pendingWrite = Promise.resolve();
 
 export function getWorkbookAbsolutePath(): string {
+  if (process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME) {
+    return path.join(os.tmpdir(), "dhruaval.xlsx");
+  }
   return path.resolve(process.cwd(), env.registrationsWorkbookPath);
 }
 
@@ -46,71 +50,75 @@ function setupWorksheet(worksheet: ExcelJS.Worksheet) {
 
 export function appendRegistrationToWorkbook(registration: RegistrationWorkbookRow): Promise<void> {
   const write = pendingWrite.then(async () => {
-    const workbook = new ExcelJS.Workbook();
-    const workbookPath = getWorkbookAbsolutePath();
+    try {
+      const workbook = new ExcelJS.Workbook();
+      const workbookPath = getWorkbookAbsolutePath();
 
-    // Ensure directory exists
-    const dir = path.dirname(workbookPath);
-    if (!fs.existsSync(dir)) {
-      fs.mkdirSync(dir, { recursive: true });
-    }
-
-    if (fs.existsSync(workbookPath)) {
-      await workbook.xlsx.readFile(workbookPath);
-    }
-
-    let regSheet = workbook.getWorksheet(worksheetName);
-    if (!regSheet) regSheet = workbook.addWorksheet(worksheetName);
-    setupWorksheet(regSheet);
-
-    let sheet1 = workbook.getWorksheet("Sheet1");
-    if (!sheet1) sheet1 = workbook.addWorksheet("Sheet1");
-    setupWorksheet(sheet1);
-
-    const formattedTime = registration.submittedAt.toLocaleString("en-IN", {
-      dateStyle: "medium",
-      timeStyle: "short",
-    });
-
-    const rowData = {
-      registrationId: registration.registrationId,
-      submittedAt: formattedTime,
-      fullName: registration.fullName,
-      email: registration.email,
-      mobile: registration.mobile,
-      course: registration.course,
-      city: registration.city,
-      profession: registration.profession,
-      date: registration.date,
-      preferredBatch: registration.preferredBatch,
-      message: registration.message,
-    };
-
-    [regSheet, sheet1].forEach((ws) => {
-      const col1Values = ws.getColumn(1).values as any[];
-      if (!col1Values || !col1Values.some((id) => String(id) === registration.registrationId)) {
-        ws.addRow(rowData);
+      const dir = path.dirname(workbookPath);
+      if (!fs.existsSync(dir)) {
+        fs.mkdirSync(dir, { recursive: true });
       }
-    });
 
-    await workbook.xlsx.writeFile(workbookPath);
+      if (fs.existsSync(workbookPath)) {
+        await workbook.xlsx.readFile(workbookPath);
+      }
+
+      let regSheet = workbook.getWorksheet(worksheetName);
+      if (!regSheet) regSheet = workbook.addWorksheet(worksheetName);
+      setupWorksheet(regSheet);
+
+      let sheet1 = workbook.getWorksheet("Sheet1");
+      if (!sheet1) sheet1 = workbook.addWorksheet("Sheet1");
+      setupWorksheet(sheet1);
+
+      const formattedTime = registration.submittedAt.toLocaleString("en-IN", {
+        dateStyle: "medium",
+        timeStyle: "short",
+      });
+
+      const rowData = {
+        registrationId: registration.registrationId,
+        submittedAt: formattedTime,
+        fullName: registration.fullName,
+        email: registration.email,
+        mobile: registration.mobile,
+        course: registration.course,
+        city: registration.city,
+        profession: registration.profession,
+        date: registration.date,
+        preferredBatch: registration.preferredBatch,
+        message: registration.message,
+      };
+
+      [regSheet, sheet1].forEach((ws) => {
+        const col1Values = ws.getColumn(1).values as any[];
+        if (!col1Values || !col1Values.some((id) => String(id) === registration.registrationId)) {
+          ws.addRow(rowData);
+        }
+      });
+
+      await workbook.xlsx.writeFile(workbookPath);
+    } catch (err) {
+      console.warn("[Workbook Write Safe Notice]:", err);
+    }
   });
 
   pendingWrite = write.catch((err) => {
-    console.error("Workbook write error:", err);
+    console.warn("Workbook write warning:", err);
     return undefined;
   });
   return write;
 }
 
 export async function readRegistrationsFromWorkbook(): Promise<RegistrationWorkbookRow[]> {
-  const workbookPath = getWorkbookAbsolutePath();
-  if (!fs.existsSync(workbookPath)) return [];
+  try {
+    const workbookPath = getWorkbookAbsolutePath();
+    if (!fs.existsSync(workbookPath)) return [];
 
-  const workbook = new ExcelJS.Workbook();
-  await workbook.xlsx.readFile(workbookPath);
-  const worksheet = workbook.getWorksheet(worksheetName) || workbook.getWorksheet("Sheet1");
-  if (!worksheet) return [];
+    const workbook = new ExcelJS.Workbook();
+    await workbook.xlsx.readFile(workbookPath);
+    const worksheet = workbook.getWorksheet(worksheetName) || workbook.getWorksheet("Sheet1");
+    if (!worksheet) return [];
 
   const rows: RegistrationWorkbookRow[] = [];
   worksheet.eachRow((row, rowNumber) => {
@@ -148,4 +156,8 @@ export async function readRegistrationsFromWorkbook(): Promise<RegistrationWorkb
   });
 
   return rows;
+  } catch (err) {
+    console.warn("[Workbook Read Catch Notice]:", err);
+    return [];
+  }
 }
