@@ -5,7 +5,11 @@ let isConnected = false;
 
 export default async function handler(req: any, res: any) {
   if (!isConnected) {
-    await connectDatabase();
+    try {
+      await connectDatabase();
+    } catch (err) {
+      console.error("[Vercel Serverless] Database initialization error:", err);
+    }
     isConnected = true;
   }
   return app(req, res);

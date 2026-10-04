@@ -129,14 +129,24 @@ export async function connectDatabase() {
     if (!fs.existsSync(dbDir)) fs.mkdirSync(dbDir, { recursive: true });
     
     console.log("Starting disk-backed local MongoDB database engine...");
-    const { MongoMemoryServer } = await import("mongodb-memory-server");
-    const mongod = await MongoMemoryServer.create({
-      instance: { dbPath: dbDir, storageEngine: "wiredTiger" },
-    });
-    const uri = mongod.getUri();
-    await mongoose.connect(uri);
-    console.log(`Disk-backed MongoDB database engine running live at ${uri}`);
-    await seedInitialData();
+    let MongoMemoryServer;
+    try {
+      const memModule = await import("mongodb-memory-server");
+      MongoMemoryServer = memModule.MongoMemoryServer;
+    } catch (importErr) {
+      console.warn("[Database] mongodb-memory-server unavailable in production bundle.");
+      return;
+    }
+
+    if (MongoMemoryServer) {
+      const mongod = await MongoMemoryServer.create({
+        instance: { dbPath: dbDir, storageEngine: "wiredTiger" },
+      });
+      const uri = mongod.getUri();
+      await mongoose.connect(uri);
+      console.log(`Disk-backed MongoDB database engine running live at ${uri}`);
+      await seedInitialData();
+    }
   } catch (error) {
     console.error("[Database] Error starting MongoDB engine:", error);
   }
