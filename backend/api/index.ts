@@ -1,16 +1,21 @@
 import app from "../src/app";
 import { connectDatabase } from "../src/config/database";
 
-let isConnected = false;
+let connectionPromise: Promise<void> | null = null;
 
-export default async function handler(req: any, res: any) {
-  if (!isConnected) {
-    try {
-      await connectDatabase();
-    } catch (err) {
-      console.error("[Vercel Serverless] Database initialization error:", err);
-    }
-    isConnected = true;
+// Middleware to ensure DB connection is initialized once per serverless cold start
+app.use(async (_req, _res, next) => {
+  if (!connectionPromise) {
+    connectionPromise = connectDatabase().catch((err) => {
+      console.error("[Vercel DB Connection Error]:", err);
+    });
   }
-  return app(req, res);
-}
+  try {
+    await connectionPromise;
+  } catch {
+    // Continue request processing even if DB connection has an error
+  }
+  next();
+});
+
+export default app;
