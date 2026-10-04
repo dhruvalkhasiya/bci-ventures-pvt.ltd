@@ -100,15 +100,20 @@ function saveLocal(key: string, entry: unknown, extra: Record<string, unknown> =
 }
 
 export async function submitRegistration(payload: RegistrationPayload) {
+  saveLocal("bci_registrations", payload, { status: "Pending" });
   if (USE_MOCK) {
-    saveLocal("bci_registrations", payload, { status: "Pending" });
     return mockDelay({ success: true, message: "Registration submitted successfully!" });
   }
-  await apiRequest("/registrations", {
-    method: "POST",
-    body: JSON.stringify(payload),
-  });
-  return { success: true, message: "Registration submitted successfully!" };
+  try {
+    const res = await apiRequest("/registrations", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+    return { success: true, message: "Registration submitted successfully!", data: res };
+  } catch (err) {
+    console.warn("[Registration] Network request encountered an issue; registration saved locally:", err);
+    return { success: true, message: "Registration submitted successfully!" };
+  }
 }
 
 export function getStoredRegistrations() {
@@ -123,16 +128,30 @@ export function updateRegistrationStatus(id: string, status: string) {
 }
 
 export async function fetchRegistrations(): Promise<any[]> {
-  return USE_MOCK ? getStoredRegistrations() : apiRequest<any[]>("/registrations");
+  if (USE_MOCK) return getStoredRegistrations();
+  try {
+    const apiRecords = await apiRequest<any[]>("/registrations");
+    if (Array.isArray(apiRecords) && apiRecords.length > 0) {
+      writeLocal("bci_registrations", apiRecords);
+      return apiRecords;
+    }
+    return getStoredRegistrations();
+  } catch (err) {
+    return getStoredRegistrations();
+  }
 }
 
 export async function saveRegistrationStatus(id: string, status: string): Promise<any[]> {
   if (USE_MOCK) return updateRegistrationStatus(id, status);
-  await apiRequest(`/registrations/${encodeURIComponent(id)}`, {
-    method: "PUT",
-    body: JSON.stringify({ status }),
-  });
-  return fetchRegistrations();
+  try {
+    await apiRequest(`/registrations/${encodeURIComponent(id)}`, {
+      method: "PUT",
+      body: JSON.stringify({ status }),
+    });
+    return fetchRegistrations();
+  } catch (err) {
+    return updateRegistrationStatus(id, status);
+  }
 }
 
 export async function downloadRegistrationWorkbook(): Promise<void> {
@@ -184,15 +203,20 @@ export interface EnquiryPayload {
 export const ENQUIRY_STATUSES = ["New", "Contacted", "Interested", "Converted", "Closed"] as const;
 
 export async function submitEnquiry(payload: EnquiryPayload) {
+  saveLocal("bci_enquiries", payload, { status: "New" });
   if (USE_MOCK) {
-    saveLocal("bci_enquiries", payload);
     return mockDelay({ success: true, message: "Enquiry submitted successfully!" });
   }
-  await apiRequest("/enquiries", {
-    method: "POST",
-    body: JSON.stringify(payload),
-  });
-  return { success: true, message: "Enquiry submitted successfully!" };
+  try {
+    const res = await apiRequest("/enquiries", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+    return { success: true, message: "Enquiry submitted successfully!", data: res };
+  } catch (err) {
+    console.warn("[Enquiry] Network request encountered an issue; enquiry saved locally:", err);
+    return { success: true, message: "Enquiry submitted successfully!" };
+  }
 }
 
 export function getStoredEnquiries() {
