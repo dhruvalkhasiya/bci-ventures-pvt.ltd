@@ -9,7 +9,25 @@ function serializeEnquiry(enquiry: any) {
 
 export async function createEnquiry(req: Request, res: Response) {
   try {
-    const enquiry = await Enquiry.create(req.body);
+    const name = (req.body.name || req.body.fullName || "").trim();
+    const phone = (req.body.phone || req.body.mobile || "").trim();
+    const email = (req.body.email || "").trim().toLowerCase();
+    const course = (req.body.course || req.body.courseId || "").trim();
+    const message = (req.body.message || "").trim();
+
+    if (!name || !phone || !email || !message) {
+      return failure(res, "Name, phone, email, and message are required.", 400);
+    }
+
+    const enquiry = await Enquiry.create({
+      name,
+      phone,
+      email,
+      course,
+      message,
+      status: "New",
+    });
+
     return success(res, serializeEnquiry(enquiry), "Enquiry submitted successfully!", 201);
   } catch (err: any) {
     return failure(res, err.message, 400);

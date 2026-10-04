@@ -56,9 +56,17 @@ function serializeRegistration(registration: any) {
 
 export async function createRegistration(req: Request, res: Response) {
   try {
-    const { fullName, email, mobile, course, city, profession, date, preferredBatch, message } = req.body;
-    const displayCourse = await getDisplayCourseTitle(course);
-    const submissionDate = date || new Date().toLocaleDateString("en-IN");
+    const fullName = (req.body.fullName || req.body.name || "Student").trim();
+    const email = (req.body.email || "").trim().toLowerCase();
+    const mobile = (req.body.mobile || req.body.phone || "").trim();
+    const courseInput = req.body.course || req.body.courseId || "";
+    const displayCourse = await getDisplayCourseTitle(courseInput);
+    const city = (req.body.city || "Not Specified").trim();
+    const profession = (req.body.profession || "").trim();
+    const dateInput = req.body.date || req.body.startDate || "";
+    const submissionDate = dateInput || new Date().toLocaleDateString("en-IN");
+    const preferredBatch = req.body.preferredBatch || "";
+    const message = req.body.message || "";
 
     if (mongoose.connection.readyState !== 1) {
       const createdAt = new Date();

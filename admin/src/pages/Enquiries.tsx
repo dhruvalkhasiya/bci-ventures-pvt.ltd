@@ -59,8 +59,8 @@ export default function Enquiries() {
               <tbody className="divide-y divide-slate-100">
                 {enquiries.map((e: any) => (
                   <tr key={e.id || e._id || Math.random()}>
-                    <td className="p-4 font-bold text-slate-900">{e.name}</td>
-                    <td className="p-4 font-medium text-slate-700">{e.phone}</td>
+                    <td className="p-4 font-bold text-slate-900">{e.name || e.fullName}</td>
+                    <td className="p-4 font-medium text-slate-700">{e.phone || e.mobile}</td>
                     <td className="p-4 text-slate-500">{e.email}</td>
                     <td className="p-4 font-semibold text-brand-700">{e.course || "General Inquiry"}</td>
                     <td className="p-4 text-slate-600 max-w-xs truncate">{e.message || "-"}</td>
