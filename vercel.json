@@ -6,11 +6,11 @@
     },
     {
       "source": "/admin/(.*)",
-      "destination": "/admin/dist/index.html"
+      "destination": "/admin/index.html"
     },
     {
       "source": "/((?!api|admin).*)",
-      "destination": "/frontend/dist/index.html"
+      "destination": "/index.html"
     }
   ]
 }
